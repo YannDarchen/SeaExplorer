@@ -20,7 +20,7 @@ Const.R = 6371000;
 
 %Choose dives wanted
 explorer.first_dive = 10;
-explorer.last_dive = 20;
+explorer.last_dive = 16;
 i_dive= tableau(:,1) >= explorer.first_dive & tableau(:,1) <= explorer.last_dive;
 tableau = tableau(i_dive,:);   
 
@@ -212,7 +212,7 @@ end
 
 explorer.lat_i=explorer.lat(ind);
 explorer.time_i=explorer.time(ind);
-time_interp = linspace(explorer.time_i(1),explorer.time_i(end),2000);
+time_interp = linspace(explorer.time_i(1),explorer.time_i(end),500);
 figure()
 explorer.lat_interp = interp1(explorer.time_i,explorer.lat_i,time_interp,'spline');
 plot(explorer.time_i,explorer.lat_i,'o',time_interp,explorer.lat_interp,':.');
@@ -225,7 +225,7 @@ plot(explorer.time_i,explorer.lon_i,'o',time_interp,explorer.lon_interp,':.');
 
 explorer.depth_interp = interp1(explorer.time,explorer.depth,time_interp,'spline');
 
-plot3(explorer.lat_interp,explorer.lon_interp,explorer.depth_interp)
+plot3(explorer.la
 
 
 

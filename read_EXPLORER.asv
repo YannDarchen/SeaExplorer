@@ -33,7 +33,7 @@ explorer.oil(to_ignore.tot ~= 0 )=[];
 explorer.pitch(to_ignore.tot ~= 0 )=[];
 explorer.pressure(to_ignore.tot ~= 0 )=[];
 explorer.temp(to_ignore.tot ~= 0 )=[];
-explorer.dive(to_ignore.tot ~= 0 )=[];
+
 
 %explorer.dens = sw_smow(explorer.temp);
 
