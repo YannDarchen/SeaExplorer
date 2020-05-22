@@ -18,75 +18,28 @@ Const.g=9.81; % gravité
 % ------------------------------------- %
 
 %Choose dives wanted
-first = 11;
-last = 22;
-i_dive= tableau(:,1) >=first & tableau(:,1) <= last;
+explorer.first_dive = 1;
+explorer.last_dive = 63;
+i_dive= tableau(:,1) >= explorer.first_dive & tableau(:,1) <= explorer.last_dive;
 tableau = tableau(i_dive,:);   
 
 %Read Data
-explorer.lat = tableau(:,10)/100;
-explorer.lon = tableau(:,11)/100;
-explorer.time = tableau(:,8);
-explorer.depth = tableau(:,9);
-explorer.oil = tableau(:,13);
-explorer.pitch = tableau(:,15);
-explorer.pressure = tableau(:,17);
-explorer.temp = tableau(:,18);
+explorer = read_EXPLORER(tableau);
 
-
-
-%Remove NaN
-to_ignore_lat=isnan(explorer.lat);
-to_ignore_lon=isnan(explorer.lon);
-to_ignore_time=isnan(explorer.time);
-to_ignore_depth=isnan(explorer.depth);
-to_ignore_oil=isnan(explorer.oil);
-to_ignore_pitch=isnan(explorer.pitch);
-to_ignore_pressure=isnan(explorer.pressure);
-to_ignore_temp=isnan(explorer.temp);
-
-to_ignore=to_ignore_lat+to_ignore_lon+to_ignore_time+to_ignore_depth+to_ignore_oil+to_ignore_pitch+to_ignore_pressure+to_ignore_temp; 
-
-
-explorer.lat(to_ignore ~= 0 )=[];
-explorer.lon(to_ignore ~= 0 )=[];
-explorer.time(to_ignore ~= 0 )=[];
-explorer.depth(to_ignore ~= 0 )=[];
-explorer.oil(to_ignore ~= 0 )=[];
-explorer.pitch(to_ignore ~= 0 )=[];
-explorer.pressure(to_ignore ~= 0 )=[];
-explorer.temp(to_ignore ~= 0 )=[];
-
-
-dens = sw_smow(explorer.temp);
-
-s=length(explorer.lat);
-
-explorer.M = 59; % Mass in kg
-explorer.V0 = 0.051358; %Volume
-explorer.alpha = 3*10^-6; %compressibility
-explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique 
-explorer.T0=20; % température
-explorer.a=3; % angle d'attaque degrés 
-explorer.S= 0.032365; % surface du glider 
-explorer.Cd=0.4; % coefficient de trainée 
-
-   
 
 %% ----- Display Map Web Browser ----- %%
 % ------------------------------------- %
-% 
+
 % webmap('Ocean Basemap')
-% latitude = 43.44; 
-% longitude = 8.2; 
-% zoom = 9; 
-% indices = linspace(1,s,1000);% nombre de points à afficher
+% indices = linspace(1,explorer.size,50);% nombre de points à afficher
 % indices=fix(indices);
 % 
-% wmmarker(explorer.lat(indices),explorer.lon(indices));
+% %wmmarker(explorer.lat(indices),explorer.lon(indices));
 % wmmarker(explorer.lat(1),explorer.lon(1),'Color','green');
-% wmmarker(explorer.lat(end),explorer.lon(end),'Color','black');
-% wmcenter(latitude,longitude,zoom) 
+% wmmarker(explorer.lat(end),explorer.lon(end),'Color','red');
+% 
+% wmline(explorer.lat(indices),explorer.lon(indices));
+
 
 %% ----- Display Map Figure + gif ----- %%
 % ------------------------------------- %
@@ -224,24 +177,24 @@ explorer.Cd=0.4; % coefficient de trainée
 % W_glider : Pressure/time
 % W = W_glider - W_model
 
-W_glider = zeros(1,s-1);
-    for k=1:s-1
-    W_glider(k) = (explorer.depth(k)-explorer.depth(k+1))/(explorer.time(k+1)-explorer.time(k));
-    end
-    W_glider = W_glider./Const.d2s;
- 
-    
- explorer.V = 5*10^-4 +  explorer.V0*(1-explorer.alpha*explorer.pressure+explorer.beta*(explorer.temp-explorer.T0));% volume
- W_model=zeros(s,1);
- for b=1:s
-    W_model(b) = -sqrt((2*(explorer.M-dens(b)*explorer.V(b))*Const.g*sind(explorer.pitch(b)+explorer.a)^3)/(dens(b)*explorer.S*explorer.Cd));
- end
- 
-figure()
-plot(explorer.time(1:end-1), W_glider)
-hold on 
-plot(explorer.time,W_model)
-datetick('x',0,'keepticks')
-legend('W\_glider','W\_model')
-hold off
+% W_glider = zeros(1,s-1);
+%     for k=1:s-1
+%     W_glider(k) = (explorer.depth(k)-explorer.depth(k+1))/(explorer.time(k+1)-explorer.time(k));
+%     end
+%     W_glider = W_glider./Const.d2s;
+%  
+%     
+%  explorer.V = 5*10^-4 +  explorer.V0*(1-explorer.alpha*explorer.pressure+explorer.beta*(explorer.temp-explorer.T0));% volume
+%  W_model=zeros(s,1);
+%  for b=1:s
+%     W_model(b) = -sqrt((2*(explorer.M-dens(b)*explorer.V(b))*Const.g*sind(explorer.pitch(b)+explorer.a)^3)/(dens(b)*explorer.S*explorer.Cd));
+%  end
+%  
+% figure()
+% plot(explorer.time(1:end-1), W_glider)
+% hold on 
+% plot(explorer.time,W_model)
+% datetick('x',0,'keepticks')
+% legend('W\_glider','W\_model')
+% hold off
 
