@@ -225,10 +225,16 @@ plot(explorer.time_i,explorer.lon_i,'o',time_interp,explorer.lon_interp,':.');
 
 explorer.depth_interp = interp1(explorer.time,explorer.depth,time_interp,'spline');
 
-plot3(explorer.lat_interp,explorer.lon_interp,explorer.depth_interp)
 
-
-
+figure()
+plot3(explorer.lat_interp,explorer.lon_interp,explorer.depth_interp,'w')
+hold on 
+for j= 1:length(explorer.lat_interp)
+    disp(j)
+    plot3(explorer.lat_interp(j),explorer.lon_interp(j),explorer.depth_interp(j),'+k')
+    drawnow
+end
+hold off
 
 
 
