@@ -97,20 +97,20 @@ explorer = read_EXPLORER(tableau,explorer);
 %% %% ----- Display depth, oil volume, pitch ----- %%
 % ------------------------------------- %
 
-figure()
-yyaxis left
-plot(explorer.time,-explorer.depth,'LineWidth',1)
-hold on 
-plot(explorer.time,explorer.oil,'LineWidth',1)
-ylabel('profondeur(m), huile (ml)')
-yyaxis right
-plot(explorer.time,explorer.pitch,'LineWidth',1)
-hold off
-title('Profondeur, huile, pitch')
-ylabel('pitch (°)')
-datetick('x',0,'keepticks')
-legend('profondeur','volume huile','pitch')
-
+% figure()
+% yyaxis left
+% plot(explorer.time,-explorer.depth,'LineWidth',1)
+% hold on 
+% plot(explorer.time,explorer.oil,'LineWidth',1)
+% ylabel('profondeur(m), huile (ml)')
+% yyaxis right
+% plot(explorer.time,explorer.pitch,'LineWidth',1)
+% hold off
+% title('Profondeur, huile, pitch')
+% ylabel('pitch (°)')
+% datetick('x',0,'keepticks')
+% legend('profondeur','volume huile','pitch')
+% 
 
 
 %% %% ----- Display temperature and salinity ----- %%
@@ -354,3 +354,40 @@ legend('profondeur','volume huile','pitch')
 % title('speed')
 % datetick('x',0,'keepticks')
 % legend('speed\_up','speed\_down')
+
+
+%% %% ----- Display pitch and speed ----- %%
+% ------------------------------------- %
+
+
+explorer.p = [];
+for j= explorer.first_dive:explorer.last_dive %data by dive
+     i_dive1 = tableau(:,1) == j;
+     tableau_dive = tableau(i_dive1,:);
+     explorer.p = tableau_dive(:,17); %pression
+     explorer.assiette = tableau_dive(:,15);
+     explorer.temps = tableau_dive(:,8);
+     
+     ind = find(explorer.p == max(explorer.p));
+     explorer.p=explorer.p(1:ind);
+     explorer.assiette=explorer.assiette(1:ind);
+
+    W_glider = zeros(1,ind);
+    for k=1:ind-1
+        W_glider(k) = (explorer.p(k)-explorer.p(k+1))/(explorer.temps(k+1)-explorer.temps(k));
+    end
+    W_glider = W_glider./Const.d2s;
+end
+ figure() 
+ subplot(1,2,1)
+ plot(explorer.assiette(2:ind-6),explorer.p(2:ind-6))
+ title('pitch')
+ subplot(1,2,2)
+ plot(W_glider(1:end-2),explorer.p(1:ind-2))
+ title('W\_glider')
+
+ 
+ 
+
+ 
+ 
