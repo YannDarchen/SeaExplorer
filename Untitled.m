@@ -1,9 +1,12 @@
-x = 0:pi/4:2*pi; 
-v = sin(x);
-xq = 0:pi/16:2*pi;
-figure
-vq1 = interp1(x,v,xq,'pchip');
-plot(x,v,'o',xq,vq1,':.');
-xlim([0 2*pi]);
-title('(Default) Linear Interpolation');
+x = linspace(1,10,100);
+y = sin(x);
+y(end) = NaN;
+c = y;
 
+figure
+patch(x,y,c,'EdgeColor','w','Marker','o','MarkerFaceColor','flat');
+colorbar;
+for j=1:length(x)
+    patch(x(j),y(j),c(j),'EdgeColor','interp','Marker','o','MarkerFaceColor','flat');
+    drawnow
+end
