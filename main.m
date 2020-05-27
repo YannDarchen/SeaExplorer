@@ -7,13 +7,15 @@
 close all;clc;clear;clear global;
 
 %Data path
-addpath('..\Data_Stage');
+addpath('Data_Stage');
+addpath('Fonction');
+addpath('SeaWater');
 load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
 
 %Constant
 Const.d2s = 86400;
 Const.g=9.81; % gravité
-Const.R = 6371000;
+Const.R = 6371;
 
 %% ----- Read Data ----- %%
 % ------------------------------------- %
@@ -300,20 +302,20 @@ explorer = read_EXPLORER(tableau,explorer);
 %% %% ----- Display temperature and salinity profile ----- %%
 % ------------------------------------- %
 
-% figure()
-% subplot(1,3,1)
-% plot(explorer.temp,-explorer.pressure,'b')
-% title('Température')
-% ylabel('Pression (dbar)')
-% xlabel('°C')
-% subplot(1,3,2)
-% plot(explorer.s,-explorer.pressure,'r')
-% title('Salinité')
-% subplot(1,3,3)
-% plot(explorer.dens,-explorer.pressure,'k')
-% title('Masse volumique')
-% xlabel('kg/m^3')
-% 
+figure()
+subplot(1,3,1)
+plot(explorer.temp,-explorer.pressure,'b')
+title('Température')
+ylabel('Pression (dbar)')
+xlabel('°C')
+subplot(1,3,2)
+plot(explorer.s,-explorer.pressure,'r')
+title('Salinité')
+subplot(1,3,3)
+plot(explorer.dens,-explorer.pressure,'k')
+title('Masse volumique')
+xlabel('kg/m^3')
+
 
 
 %% %% ----- Display speed up and speed down ----- %%
@@ -360,34 +362,41 @@ explorer = read_EXPLORER(tableau,explorer);
 % ------------------------------------- %
 
 
-explorer.p = [];
-for j= explorer.first_dive:explorer.last_dive %data by dive
-     i_dive1 = tableau(:,1) == j;
-     tableau_dive = tableau(i_dive1,:);
-     explorer.p = tableau_dive(:,17); %pression
-     explorer.assiette = tableau_dive(:,15);
-     explorer.temps = tableau_dive(:,8);
-     
-     ind = find(explorer.p == max(explorer.p));
-     explorer.p=explorer.p(1:ind);
-     explorer.assiette=explorer.assiette(1:ind);
-
-    W_glider = zeros(1,ind);
-    for k=1:ind-1
-        W_glider(k) = (explorer.p(k)-explorer.p(k+1))/(explorer.temps(k+1)-explorer.temps(k));
-    end
-    W_glider = W_glider./Const.d2s;
-end
- figure() 
- subplot(1,2,1)
- plot(explorer.assiette(2:ind-6),explorer.p(2:ind-6))
- title('pitch')
- subplot(1,2,2)
- plot(W_glider(1:end-2),explorer.p(1:ind-2))
- title('W\_glider')
-
- 
- 
+% tableau_pitch=[];
+% tableau_W_glider=[];
+% for j= explorer.first_dive:explorer.last_dive 
+%        explorer = by_dive(tableau,j);%data by dive
+%     
+%      pi=[0:1:600];
+%      ind = find(explorer.pressure == max(explorer.pressure));
+%      explorer.pressure=explorer.pressure(50:ind-10);
+%      explorer.pitch=explorer.pitch(50:ind-10);
+%      explorer.time=explorer.time(50:ind-10);
+% 
+%     W_glider = zeros(1,length(explorer.pressure)-10);
+%     for k=1:length(explorer.pressure)-10
+%         W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+10))/(explorer.time(k+10)-explorer.time(k));
+%     end
+%     W_glider = W_glider./Const.d2s;
+%     
+%     
+%      pitch=interp1(explorer.pressure,explorer.pitch,pi);
+%      W_glider = interp1(explorer.pressure(1:end-10),W_glider,pi);
+%      tableau_pitch=[tableau_pitch pitch'];
+%      tableau_W_glider=[tableau_W_glider W_glider'];
+% end
+% for i=1:min(size(tableau_W_glider))
+%  figure(i) 
+%  subplot(1,2,1)
+%  plot(tableau_pitch(:,i),-pi)
+%  title('pitch')
+%  ylabel('pression')
+%  subplot(1,2,2)
+%  plot(tableau_W_glider(:,i),-pi,'b')
+%  title('W\_glider')
+% end
+%  
+%  
 
  
  
