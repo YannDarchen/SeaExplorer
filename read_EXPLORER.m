@@ -67,8 +67,8 @@ explorer.size=length(explorer.lat);
 %% SeaExplorer caracteristics
 
 explorer.M = 59; % Mass in kg
-explorer.V0 = 0.051358; %Volume
-explorer.alpha = 3*10^-6; %compressibility
+explorer.V0 = 0.0573; %Volume
+explorer.alpha = 3*10^-10; %compressibility %Pa^-1
 explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique 
 explorer.T0=20; % température
 explorer.a=3; % angle d'attaque degrés 
