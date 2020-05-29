@@ -8,7 +8,7 @@ close all;clc;clear;clear global;
 
 %Data path
 addpath('Data_Stage');
-addpath('Fonction');
+%addpath('Fonction');
 addpath('SeaWater');
 load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
 
@@ -227,33 +227,66 @@ explorer = read_EXPLORER(tableau,explorer);
 % W_model : velocity from the model
 % W_glider : Pressure/time
 % W = W_glider - W_model
-
-W_glider = zeros(1,explorer.size-10);
-    for k=1:explorer.size-10
-    W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+10))/(explorer.time(k+10)-explorer.time(k));
-    end
-    W_glider = W_glider./Const.d2s;
- 
-%     SPRAY MODEL
-%  explorer.V = 5*10^-4 +  explorer.V0*(1-explorer.alpha*explorer.pressure+explorer.beta*(explorer.temp-explorer.T0));% volume
-%  W_model=zeros(explorer.size,1);
-%  for b=1:explorer.size
-%     W_model(b) = -sqrt((2*(explorer.M-explorer.dens(b)*explorer.V(b))*Const.g*sind(explorer.pitch(b)+explorer.a)^3)/(explorer.dens(b)*explorer.S*explorer.Cd));
-%  end
-%  
-
-[U,W_model,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(explorer.pressure,explorer.dens,...
-                         explorer.pitch,explorer.oil,explorer.temp,explorer.V0,explorer.alpha,explorer.Cd,explorer.M);
-
- W = W_glider'-W_model(1:end-10);                    
-figure()
-plot(explorer.time(1:end-10), W_glider,'LineWidth',1.5)
-hold on 
-plot(explorer.time,W_model,'LineWidth',2)
-plot(explorer.time(1:end-10),W,'LineWidth',1.5)
-datetick('x',0,'keepticks')
-legend('W\_glider','W\_model','W')
-hold off
+% 
+% W_glider = zeros(1,explorer.size-5);
+%     for k=1:explorer.size-5
+%     W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+%     end
+%    % W_glider1 =smoothdata(W_glider./Const.d2s,'movmedian');
+%    W_glider = W_glider./Const.d2s;
+% %     SPRAY MODEL
+% %  explorer.V = 5*10^-4 +  explorer.V0*(1-explorer.alpha*explorer.pressure+explorer.beta*(explorer.temp-explorer.T0));% volume
+% %  W_model=zeros(explorer.size,1);
+% %  for b=1:explorer.size
+% %     W_model(b) = -sqrt((2*(explorer.M-explorer.dens(b)*explorer.V(b))*Const.g*sind(explorer.pitch(b)+explorer.a)^3)/(explorer.dens(b)*explorer.S*explorer.Cd));
+% %  end
+% %  
+% F=[];
+% Triplet = [];
+% dt=30;
+% V0_min=0.0571;
+% V0_max=0.0575;
+% alpha_min=2e-10;
+% alpha_max=5e-10;
+% Cd_min=0.08;
+% Cd_max=0.12;
+% W_model_tot=[];
+% A_tot=[];
+% for V0=V0_min:(V0_max-V0_min)/dt:V0_max
+%     for alpha=alpha_min:(alpha_max-alpha_min)/dt:alpha_max 
+%         for Cd=Cd_min:(Cd_max-Cd_min)/dt:Cd_max
+%            [W_model] = flight_model(explorer.pressure,explorer.dens,...
+%                          explorer.pitch,explorer.oil,explorer.temp,V0,alpha,Cd,explorer.M);
+%             A=(W_glider'.^2-W_model(1:end-5).^2);
+%             B=sum(abs(A));       
+%             disp(B)
+%             F=[F B];
+%             Triplet = [Triplet [V0 alpha Cd]'];
+%         end 
+%     end
+% end
+% % 
+% opt =find(F == min(abs(F)) | F == -min(abs(F)));
+% disp(min(abs(F)))
+% explorer.V0 = Triplet(1,opt);
+% explorer.alpha = Triplet(2,opt);
+% explorer.Cd=Triplet(3,opt);
+% 
+% [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(explorer.pressure,explorer.dens,...
+%                          explorer.pitch,explorer.oil,explorer.temp,explorer.V0,explorer.alpha,explorer.Cd,explorer.M);
+% 
+% 
+% 
+% %  %W = W_glider'-W_model(1:end-5);                    
+%  figure()
+%  plot(explorer.time(1:end-5), W_glider,'LineWidth',1.5)
+%  hold on 
+% % 
+%  plot(explorer.time,W_model,'LineWidth',1.5)
+% % %plot(explorer.time(1:end-10),W,'LineWidth',1.5)
+%  datetick('x',0,'keepticks')
+%  legend('W\_glider','W\_model','W')
+% hold off
 
 %% %% ----- Display 3D ----- %%
 % ------------------------------------- %
@@ -366,76 +399,77 @@ hold off
 
 %% %% ----- Display pitch and speed ----- %%
 % ------------------------------------- %
-% 
-% 
-% tableau_pitch=[];
-% tableau_W_glider=[];
-% b1=[];
-% for j= explorer.first_dive:explorer.last_dive 
-%        explorer = by_dive(tableau,j);%data by dive
-%     
-%      pi=[0:1:600];
-%      ind = find(explorer.pressure == max(explorer.pressure));
-%      explorer.pressure=explorer.pressure(50:ind-10);
-%      explorer.pitch=explorer.pitch(50:ind-10);
-%      explorer.time=explorer.time(50:ind-10);
-% 
-%     W_glider = zeros(1,length(explorer.pressure)-10);
-%     for k=1:length(explorer.pressure)-10
-%         W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+10))/(explorer.time(k+10)-explorer.time(k));
-%     end
-%     W_glider = W_glider./Const.d2s;
-%     
-%     
-%      pitch=interp1(explorer.pressure,explorer.pitch,pi);
-%      W_glider = interp1(explorer.pressure(1:end-10),W_glider,pi);
-%      tableau_pitch=[tableau_pitch pitch'];
-%      tableau_W_glider=[tableau_W_glider W_glider'];
-%      
-% end
-% 
-% %%Linear Regression%%%%%
-% %Calcul coeff directeur
-% 
-% b1=[];
-% b=[];
-% p=[];
-% for i=1:min(size(tableau_pitch))
-% b1 = [b1 tableau_pitch(70:end-40,i)\tableau_W_glider(70:end-40,i)];
-% X = [ones(length(tableau_pitch(70:end-40,i)),1) tableau_pitch(70:end-40,i)];
-% b = [b X\tableau_W_glider(70:end-40,i)];
-% p = [p polyfit(tableau_pitch(70:end-40,i),tableau_W_glider(70:end-40,i),2)'];
-% end
-% 
 % % 
-% for i=1:min(size(tableau_W_glider))
-%  figure(i) 
-%  subplot(1,3,1)
-%  plot(tableau_pitch(:,i),-pi)
-%  title('pitch')
-%  ylabel('pression')
-%  subplot(1,3,2)
-%  plot(tableau_W_glider(:,i),-pi,'b')
-%  title('W\_glider')
-%  subplot(1,3,3)
-%  plot(tableau_pitch(:,i),tableau_W_glider(:,i),'+','Color','#4DBEEE')
-%  hold on 
-%  ylabel('W_glider')
-%  xlabel('Pitch')
-%  y1=b1(i)*tableau_pitch(70:end-40,i);
-%  X = [ones(length(tableau_pitch(70:end-40,i)),1) tableau_pitch(70:end-40,i)];
-%  y2 = X*b(:,i);
-%  y3 = polyval(p(:,i),tableau_pitch(70:end-40,i));
-% % plot(tableau_pitch(70:end-40,i),y1,'r','LineWidth',2);
-%  plot(tableau_pitch(70:end-40,i),y2,'--','LineWidth',2)
-%   plot(tableau_pitch(70:end-40,i),y3,'--','LineWidth',2,'Color','#7E2F8E')
-% % Rsq1 = 1 - sum((tableau_W_glider(70:end-40,i) - y1).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
-%  Rsq2 = 1 - sum((tableau_W_glider(70:end-40,i) - y2).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
-%  Rsq3 = 1 - sum((tableau_W_glider(70:end-40,i) - y3).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
-%  legend('W\_glider',['R\_affine= ' num2str(Rsq2)],['R\_polynome= ' num2str(Rsq3)])
-%  
-% end
-%  
-%  
+
+tableau_pitch=[];
+tableau_W_glider=[];
+b1=[];
+for j= explorer.first_dive:explorer.last_dive 
+       explorer = by_dive(tableau,j);%data by dive
+    
+     pi=[0:1:600];
+     ind = find(explorer.pressure == max(explorer.pressure));
+     explorer.pressure=explorer.pressure(50:ind-10);
+     explorer.pitch=explorer.pitch(50:ind-10);
+     explorer.time=explorer.time(50:ind-10);
+
+    W_glider = zeros(1,length(explorer.pressure)-10);
+    for k=1:length(explorer.pressure)-10
+        W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+10))/(explorer.time(k+10)-explorer.time(k));
+    end
+    W_glider = W_glider./Const.d2s;
+    
+    
+     pitch=interp1(explorer.pressure,explorer.pitch,pi);
+     W_glider = interp1(explorer.pressure(1:end-10),W_glider,pi);
+     tableau_pitch=[tableau_pitch pitch'];
+     tableau_W_glider=[tableau_W_glider W_glider'];
+     
+end
+
+%%Linear Regression%%%%%
+%Calcul coeff directeur
+
+b1=[];
+b=[];
+p=[];
+for i=1:min(size(tableau_pitch))
+b1 = [b1 tableau_pitch(70:end-40,i)\tableau_W_glider(70:end-40,i)];
+X = [ones(length(tableau_pitch(70:end-40,i)),1) tableau_pitch(70:end-40,i)];
+b = [b X\tableau_W_glider(70:end-40,i)];
+p = [p polyfit(tableau_pitch(70:end-40,i),tableau_W_glider(70:end-40,i),2)'];
+end
+
+% 
+for i=1:min(size(tableau_W_glider))
+ figure(i) 
+ subplot(1,3,1)
+ plot(tableau_pitch(:,i),-pi)
+ title('pitch')
+ ylabel('pression')
+ subplot(1,3,2)
+ plot(tableau_W_glider(:,i),-pi,'b')
+ title('W\_glider')
+ subplot(1,3,3)
+ plot(tableau_pitch(:,i),tableau_W_glider(:,i),'+','Color','#4DBEEE')
+ hold on 
+ ylabel('W_glider')
+ xlabel('Pitch')
+ y1=b1(i)*tableau_pitch(70:end-40,i);
+ X = [ones(length(tableau_pitch(70:end-40,i)),1) tableau_pitch(70:end-40,i)];
+ y2 = X*b(:,i);
+ y3 = polyval(p(:,i),tableau_pitch(70:end-40,i));
+% plot(tableau_pitch(70:end-40,i),y1,'r','LineWidth',2);
+ plot(tableau_pitch(70:end-40,i),y2,'--','LineWidth',2)
+  plot(tableau_pitch(70:end-40,i),y3,'--','LineWidth',2,'Color','#7E2F8E')
+% Rsq1 = 1 - sum((tableau_W_glider(70:end-40,i) - y1).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
+ Rsq2 = 1 - sum((tableau_W_glider(70:end-40,i) - y2).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
+ Rsq3 = 1 - sum((tableau_W_glider(70:end-40,i) - y3).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
+ legend('W\_glider',['R\_affine= ' num2str(Rsq2)],['R\_polynome= ' num2str(Rsq3)])
+ 
+end
+
+
+
 
 

@@ -73,6 +73,6 @@ explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique
 explorer.T0=20; % température
 explorer.a=3; % angle d'attaque degrés 
 explorer.S= 0.032365; % surface du glider 
-explorer.Cd=0.4; % coefficient de trainée 
+explorer.Cd=0.1; % coefficient de trainée 
 end
 

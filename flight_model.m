@@ -1,4 +1,4 @@
-function [U,wg,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg)
+function [wg,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg)
 %%%%%
 % Glider flight model (adapted from Merckelbach et al JAOT 2010), Anthony Bosse (abolod@locean-ipsl.upmc.fr), September 2015
 % INPUT variables :
@@ -24,7 +24,7 @@ function [U,wg,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(p,rho,pitch,dvbp,temp,Vg,
 
 % constant parameters for SLOCUM 
 g = 9.81;
-S = 0.1;
+S = 0.1; %section hull 0.05
 aw = 3.7;
 ah = 2.4; % in debate
 Cd1w = 0.78;
@@ -51,7 +51,7 @@ pitch = pitch * (pi/180); % d2r
 %att = sign(pitch)*(pi/60); % radians
 % OR suppose att<<pitch and solve second order equation
 %[att1,att2,delta] = solve_2deg((Cd1w+Cd1h).*ones(size(pitch))-(1./(cos(pitch).^2)).*(aw+ah),-(aw+ah)*tan(pitch),Cd0.*ones(size(pitch)));
-[att1,att2,delta] = solve_2deg((Cd1w+Cd1h).*ones(size(pitch)),-(aw+ah)*tan(pitch),Cd0.*ones(size(pitch)));
+[att1,att2] = solve_2deg((Cd1w+Cd1h).*ones(size(pitch)),-(aw+ah)*tan(pitch),Cd0.*ones(size(pitch)));
 att = sign(pitch).*min(abs(att1),abs(att2)); % keep the smallest root 
 att_deg = att*(180/pi);
 % Vertical forces
@@ -65,7 +65,7 @@ Fb = g*(rho).*(Vg*(1-eps*(p*10000)+alphat.*(temp-13.2))+dvbp/1000000);
 U = real(sqrt( 2*(Fb-Fg)./((rho).*S.*(Cd0+(Cd1w+Cd1h).*(att.^2)).*((sin(pitch+att).^2 +...
     cos(pitch+att).^2)./sin(pitch+att))) )); % !! sign error in equation (13) from Merckelbach et al...
 wg = U.*sin(att+pitch);
-pitch_att=sin(pitch+att);
+wg=smoothdata(wg,'movmedian','SmoothingFactor',0.09);
 % Drag and lift forces
 Fd = 0.5.*rho.*(Cd0+(Cd1w+Cd1h).*(att.^2)).*S.*U.*U;
 Fl = 0.5.*rho.*(ah+aw).*att.*S.*U.*U; %positive upward
