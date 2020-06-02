@@ -65,7 +65,9 @@ Fb = g*(rho).*(Vg*(1-eps*(p*10000)+alphat.*(temp-13.2))+dvbp/1000000);
 U = real(sqrt( 2*(Fb-Fg)./((rho).*S.*(Cd0+(Cd1w+Cd1h).*(att.^2)).*((sin(pitch+att).^2 +...
     cos(pitch+att).^2)./sin(pitch+att))) )); % !! sign error in equation (13) from Merckelbach et al...
 wg = U.*sin(att+pitch);
-wg=smoothdata(wg,'movmedian','SmoothingFactor',0.09);
+
+
+%wg=smoothdata(wg,'movmedian','SmoothingFactor',0.09);
 % Drag and lift forces
 Fd = 0.5.*rho.*(Cd0+(Cd1w+Cd1h).*(att.^2)).*S.*U.*U;
 Fl = 0.5.*rho.*(ah+aw).*att.*S.*U.*U; %positive upward

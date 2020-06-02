@@ -232,51 +232,53 @@ W_glider = zeros(1,explorer.size-5);
     for k=1:explorer.size-5
     W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
     end
+    
    % W_glider1 =smoothdata(W_glider./Const.d2s,'movmedian');
    explorer.W_glider = W_glider./Const.d2s;
 
 %%%%%%%%%%%%%%%%% Méthode 3 boucles %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
-% F=[];
-% Triplet = [];
-% dt=10;
-% V0_min=0.0571;
-% V0_max=0.0575;
-% alpha_min=2e-10;
-% alpha_max=5e-10;
-% Cd_min=0.08;
-% Cd_max=0.12;
-% W_model_tot=[];
-% A_tot=[];
-% for V0=V0_min:(V0_max-V0_min)/dt:V0_max
-%     for alpha=alpha_min:(alpha_max-alpha_min)/dt:alpha_max 
-%         for Cd=Cd_min:(Cd_max-Cd_min)/dt:Cd_max
-%            [W_model] = flight_model(explorer.pressure,explorer.dens,...
-%                          explorer.pitch,explorer.oil,explorer.temp,V0,alpha,Cd,explorer.M);
-%             A=(W_glider'.^2-W_model(1:end-5).^2);
-%             B=sum(abs(A));       
-%             disp(B)
-%             F=[F B];
-%             Triplet = [Triplet [V0 alpha Cd]'];
-%         end 
-%     end
-% end
-% % 
-% opt =find(F == min(abs(F)) | F == -min(abs(F)));
-% disp(min(abs(F)))
-% explorer.V0 = Triplet(1,opt);
-% explorer.alpha = Triplet(2,opt);
-% explorer.Cd=Triplet(3,opt);
+F=[];
+Triplet = [];
+dt=30;
+V0_min=0.0571;
+V0_max=0.0575;
+alpha_min=2e-10;
+alpha_max=5e-10;
+Cd_min=0.08;
+Cd_max=0.12;
+W_model_tot=[];
+A_tot=[];
+for V0=V0_min:(V0_max-V0_min)/dt:V0_max
+    for alpha=alpha_min:(alpha_max-alpha_min)/dt:alpha_max 
+        for Cd=Cd_min:(Cd_max-Cd_min)/dt:Cd_max
+           [W_model] = flight_model(explorer.pressure,explorer.dens,...
+                         explorer.pitch,explorer.oil,explorer.temp,V0,alpha,Cd,explorer.M);
+            %B=abs(mean((explorer.W_glider'.^2-W_model(1:end-5).^2)));
+           A=explorer.W_glider'.^2-W_model(1:end-5).^2;
+            B=sum(abs(A));       
+            disp(B)
+            F=[F B];
+            Triplet = [Triplet [V0 alpha Cd]'];
+        end 
+    end
+end
 % 
-% [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(explorer.pressure,explorer.dens,...
-%                          explorer.pitch,explorer.oil,explorer.temp,explorer.V0,explorer.alpha,explorer.Cd,explorer.M);
+opt =find(F == min(abs(F)) | F == -min(abs(F)));
+disp(min(abs(F)))
+explorer.V0 = Triplet(1,opt);
+explorer.alpha = Triplet(2,opt);
+explorer.Cd=Triplet(3,opt);
+
+[W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(explorer.pressure,explorer.dens,...
+                         explorer.pitch,explorer.oil,explorer.temp,explorer.V0,explorer.alpha,explorer.Cd,explorer.M);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
 
 %%%%%%%%%%%%%%%%% Méthode fminsearch %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
-
+% 
 global pres dens pitch oil_vol Wglider temp mg
 pres=explorer.pressure;
 dens=explorer.dens;
@@ -287,25 +289,25 @@ temp=explorer.temp;
 mg=explorer.M;
 
 param0 = [explorer.V0,explorer.alpha,explorer.Cd];
+%options = optimset('MaxFunEvals',8000,'MaxIter',8000);
+options = optimset('Display','iter');
 [x,fval,exitflag,output] = fminsearch('cost',param0,options);
-
 [W_model,U,att,Fg,Fb,Fl,Fd] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
 
 % %  %W = W_glider'-W_model(1:end-5);                    
- figure()
- plot(explorer.time(1:end-5), Wglider,'LineWidth',1.5)
-  hold on 
-% % 
-  plot(explorer.time,W_model,'LineWidth',1.5)
-% % %plot(explorer.time(1:end-10),W,'LineWidth',1.5)
-  datetick('x',0,'keepticks')
-  legend('W\_glider','W\_model','W')
-hold off
+%  figure()
+%  plot(explorer.time(1:end-5), explorer.W_glider,'LineWidth',1.5)
+%   hold on 
+% % % 
+%   plot(explorer.time,W_model,'LineWidth',1.5)
+% % % %plot(explorer.time(1:end-10),W,'LineWidth',1.5)
+%   datetick('x',0,'keepticks')
+%   legend('W\_glider','W\_model','W')
+
 
 %% %% ----- Display 3D ----- %%
 % ------------------------------------- %
@@ -419,7 +421,7 @@ hold off
 %% %% ----- Display pitch and speed ----- %%
 % ------------------------------------- %
 % % 
-
+% 
 % tableau_pitch=[];
 % tableau_W_glider=[];
 % b1=[];
