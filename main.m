@@ -232,6 +232,7 @@ W_glider = zeros(1,explorer.size-5);
     for k=1:explorer.size-5
     W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
     end
+<<<<<<< Updated upstream
    % W_glider1 =smoothdata(W_glider./Const.d2s,'movmedian');
    explorer.W_glider = W_glider./Const.d2s;
 
@@ -306,6 +307,36 @@ options = optimset('Display','iter');
 % % %plot(explorer.time(1:end-10),W,'LineWidth',1.5)
   datetick('x',0,'keepticks')
   legend('W\_glider','W\_model','W')
+=======
+    W_glider = W_glider./Const.d2s;
+ 
+%     SPRAY MODEL
+%  explorer.V = 5*10^-4 +  explorer.V0*(1-explorer.alpha*explorer.pressure+explorer.beta*(explorer.temp-explorer.T0));% volume
+%  W_model=zeros(explorer.size,1);
+%  for b=1:explorer.size
+%     W_model(b) = -sqrt((2*(explorer.M-explorer.dens(b)*explorer.V(b))*Const.g*sind(explorer.pitch(b)+explorer.a)^3)/(explorer.dens(b)*explorer.S*explorer.Cd));
+%  end
+%  
+F=[];
+for Vg
+    for alpha
+        for Cd 
+            
+[U,W_model,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(explorer.pressure,explorer.dens,...
+                         explorer.pitch,explorer.oil,explorer.temp,explorer.V0,explorer.alpha,explorer.Cd,explorer.M);
+        end
+    end
+end
+
+ W = W_glider'-W_model(1:end-10);                    
+figure()
+plot(explorer.time(1:end-10), W_glider,'LineWidth',1.5)
+hold on 
+plot(explorer.time,W_model,'LineWidth',2)
+plot(explorer.time(1:end-10),W,'LineWidth',1.5)
+datetick('x',0,'keepticks')
+legend('W\_glider','W\_model','W')
+>>>>>>> Stashed changes
 hold off
 
 %% %% ----- Display 3D ----- %%
