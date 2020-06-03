@@ -2,28 +2,38 @@
 
 %% ----- Initialisation ----- %%
 % ------------------------------------- %
-
-%Clean Data
 close all;clc;clear;clear global;
-
 %Data path
 addpath('Data_Stage');
 addpath('Fonction');
 addpath('SeaWater');
-load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
+
+%%% Choose what you want to see
+yes=1;
+no=0;
+Display_Web_Map = no;
+Display_Map_Figure = no;
+Lat_Lon = no;
 
 %Constant
 Const.d2s = 86400;
 Const.g=9.81; % gravité
 Const.R = 6371;
 
+%Clean Data
+%Triplet = [];   %%%%%évolution des paramètres
+%for i=2:41-3    %%fenetre glissante 
+
+load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
+
 %% ----- Read Data ----- %%
 % ------------------------------------- %
 
 %Choose dives wanted
+ 
 explorer.first_dive = 1;
 explorer.last_dive = 63;
-i_dive= tableau(:,1) >= explorer.first_dive & tableau(:,1) <= explorer.last_dive;
+i_dive= tableau(:,1) >= explorer.first_dive & tableau(:,1) <= explorer.last_dive ;
 tableau = tableau(i_dive,:);   
 
 %Read Data
@@ -33,68 +43,78 @@ explorer = read_EXPLORER(tableau,explorer);
 %% ----- Display Map Web Browser ----- %%
 % ------------------------------------- %
 
-% webmap('Ocean Basemap')
-% indices = linspace(1,explorer.size,50);% nombre de points à afficher
-% indices=fix(indices);
-% 
-% %wmmarker(explorer.lat(indices),explorer.lon(indices));
-% wmmarker(explorer.lat(1),explorer.lon(1),'Color','green');
-% wmmarker(explorer.lat(end),explorer.lon(end),'Color','red');
-% 
-% wmline(explorer.lat(indices),explorer.lon(indices));
+if Display_Web_Map == 1
+    webmap('Ocean Basemap')
+    indices = linspace(1,explorer.size,50);% nombre de points à afficher
+    indices=fix(indices);
+
+    %wmmarker(explorer.lat(indices),explorer.lon(indices));
+    wmmarker(explorer.lat(1),explorer.lon(1),'Color','green');
+    wmmarker(explorer.lat(end),explorer.lon(end),'Color','red');
+
+    wmline(explorer.lat(indices),explorer.lon(indices));
+end
+
+%% ----- Display Map Figure + gif -------------------------- %%
+% ----------------------------------------------------------- %
+if Display_Map_Figure == 1
+
+    %h = figure;
+    %axis off
+    %filename = 'trajectoire.gif';
+    figure()
+    load coastlines
+    axesm('ortho','origin',[45 0]);
+    axesm('mercator','MapLatLimit',[42 44],'MapLonLimit',[7 10])
+    axis off;
+    gridm off;
+    framem on;
+    %mlabel('equator')
+    %plabel('fontweight','bold')
+
+    hold on 
+    plotm(coastlat,coastlon)
+    plotm(explorer.lat(1),explorer.lon(1),'+g')
+     for i=2:700:explorer.size-100
+         plotm(explorer.lat(i),explorer.lon(i),'.r')
+         %title(['Trajectoire du glider jusquau ' num2str(position(i,3)) '/' num2str(position(i,4)) '/' num2str(position(i,5)) '  ' num2str(position(i,6)) ':' num2str(position(i,7))])
+         drawnow
+         % Capture the plot as an image 
+          %frame = getframe(h); 
+          %im = frame2im(frame); 
+          %[imind,cm] = rgb2ind(im,256); 
+          % Write to the GIF File 
+          %if i == 2 
+            %  imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0.05); 
+          %else 
+           %   imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05); 
+          %end 
+    end
+
+    plotm(explorer.lat(end),explorer.lon(end),'+b')
+    hold off
+
+end
+%% ----- Display latitude and longitude ----- %%
+% ----------------------------------------------- %
 
 
-%% ----- Display Map Figure + gif ----- %%
-% ------------------------------------- %
-% h = figure;
-% axis off
-% filename = 'trajectoire.gif';
-% load coastlines
-% axesm('ortho','origin',[45 0]);
-% axesm('mercator','MapLatLimit',[42 44],'MapLonLimit',[7 10])
-% axis off;
-% gridm off;
-% framem on;
-% %mlabel('equator')
-% %plabel('fontweight','bold')
-% 
-% hold on 
-% plotm(coastlat,coastlon)
-% plotm(explorer.lat(1),explorer.lon(1),'+g')
-%  for i=2:700:s-100
-%      plotm(explorer.lat(i),explorer.lon(i),'.r')
-%      %title(['Trajectoire du glider jusquau ' num2str(position(i,3)) '/' num2str(position(i,4)) '/' num2str(position(i,5)) '  ' num2str(position(i,6)) ':' num2str(position(i,7))])
-%      drawnow
-%      % Capture the plot as an image 
-%       frame = getframe(h); 
-%       im = frame2im(frame); 
-%       [imind,cm] = rgb2ind(im,256); 
-%       % Write to the GIF File 
-%       if i == 2 
-%           imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0.05); 
-%       else 
-%           imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05); 
-%       end 
-% end
-% 
-% plotm(explorer.lat(end),explorer.lon(end),'+b')
-% hold off
+if Lat_Lon == 1
 
-%% %% ----- Display latitude and longitude ----- %%
-% ------------------------------------- %
-% 
-% figure()
-% subplot(2,1,1)
-% plot(explorer.time,explorer.lat,'+')
-% title('Evolution de la latitude')
-% ylabel('latitude en °')
-% datetick('x',0)
-% 
-% subplot(2,1,2)
-% plot(explorer.time,explorer.lon)
-% title('Evolution de la longitude')
-% ylabel('longitude en °')
-% datetick('x',2)
+    figure()
+    subplot(2,1,1)
+    plot(explorer.time,explorer.lat,'LineWidth',2)
+    title('Evolution de la latitude')
+    ylabel('latitude en °')
+    datetick('x',2)
+
+    subplot(2,1,2)
+    plot(explorer.time,explorer.lon,'LineWidth',2)
+    title('Evolution de la longitude')
+    ylabel('longitude en °')
+    datetick('x',2)
+
+end
 
 %% %% ----- Display depth, oil volume, pitch ----- %%
 % ------------------------------------- %
@@ -228,13 +248,15 @@ explorer = read_EXPLORER(tableau,explorer);
 % W_glider : Pressure/time
 % W = W_glider - W_model
 % 
-W_glider = zeros(1,explorer.size-5);
-    for k=1:explorer.size-5
-    W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
-    end
-    
-   % W_glider1 =smoothdata(W_glider./Const.d2s,'movmedian');
-   explorer.W_glider = W_glider./Const.d2s;
+
+
+% W_glider = zeros(1,explorer.size-5);
+%     for k=1:explorer.size-5
+%     W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+%     end
+%     
+%    % W_glider1 =smoothdata(W_glider./Const.d2s,'movmedian');
+%    explorer.W_glider = W_glider./Const.d2s;
 
 %%%%%%%%%%%%%%%%% Méthode 3 boucles %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
@@ -278,7 +300,9 @@ W_glider = zeros(1,explorer.size-5);
 
 %%%%%%%%%%%%%%%%% Méthode fminsearch %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
-% % 
+% 
+
+
 % global pres dens pitch oil_vol Wglider temp mg
 % pres=explorer.pressure;
 % dens=explorer.dens;
@@ -289,14 +313,20 @@ W_glider = zeros(1,explorer.size-5);
 % mg=explorer.M;
 % 
 % param0 = [explorer.V0,explorer.alpha,explorer.Cd];
-% %options = optimset('MaxFunEvals',8000,'MaxIter',8000);
-% options = optimset('Display','iter');
+% options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
 % [x,fval,exitflag,output] = fminsearch('cost',param0,options);
-% [W_model,U,att,Fg,Fb,Fl,Fd] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
+%[W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
+
 % 
+% %Remove spikes
+% ind = find(W_model<-0.3);
+% W_model(ind)=NaN;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
+
+
+
 
 % %  %W = W_glider'-W_model(1:end-5);                    
 %  figure()
@@ -308,7 +338,240 @@ W_glider = zeros(1,explorer.size-5);
 %   datetick('x',0,'keepticks')
 %   legend('W\_glider','W\_model','W')
 
+%Triplet = [Triplet x'];
+%%%Contourf vitesse %%%
+% tableau_ti=[];
+% tableau_si=[];
+% tableau_di=[];
+% tableau_w_glider=[];
+% tableau_w_model=[];
+% tableau_ww=[];
+% for j= explorer.first_dive:explorer.last_dive 
+%        explorer = by_dive(tableau,j,explorer);%data by dive
+%        
+%        W_glider = zeros(1,explorer.size-5);
+%     for k=1:explorer.size-5
+%     W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+%     end
+%     
+%    explorer.W_glider = W_glider./Const.d2s;
+%    pres=explorer.pressure;
+%    dens=explorer.dens;
+%    pitch=explorer.pitch;
+%    oil_vol=explorer.oil;
+%    Wglider=explorer.W_glider;
+%    temp=explorer.temp;
+%    mg=explorer.M;
+% 
+%    [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
 
+   %descent
+%    explorer.pressure=explorer.pressure(1:end-5);
+%    explorer.temp=explorer.temp(1:end-5);
+%    explorer.s=explorer.s(1:end-5);
+%    explorer.dens=explorer.dens(1:end-5);
+%    W_model=W_model(1:end-5);
+%    explorer.time=explorer.time(1:end-5);
+   %remontada
+%    explorer.pressure=explorer.pressure(6:end);
+%    explorer.temp=explorer.temp(6:end);
+%    explorer.s=explorer.s(6:end);
+%    explorer.dens=explorer.dens(6:end);
+%    W_model=W_model(6:end);
+%    explorer.time=explorer.time(6:end);
+   %descent
+%    to_ign=[];
+%     max_ind = find(explorer.pressure == max(explorer.pressure));
+%     i=1;
+%     while explorer.pressure(i) ~= max(explorer.pressure)
+%       if  not(explorer.pressure(i)<explorer.pressure(i+1)) % delete variations
+%         to_ign = [to_ign i+1];
+%       end
+%       i=i+1;
+%     end
+    
+    %remontada
+%     to_ign=[];
+%     max_ind = find(explorer.pressure == max(explorer.pressure));
+%     i=max_ind;
+%     while explorer.pressure(i) ~= explorer.pressure(end)
+%       if  not(explorer.pressure(i)>explorer.pressure(i+1)) % delete variations
+%         to_ign = [to_ign i+1];
+%       end
+%       i=i+1;
+%     end
+%     
+%     %to_ign = [to_ign max_ind:length(explorer.pressure)]; % taking only descent 
+%     to_ign = [to_ign 1:max_ind]; % taking only remontada 
+%     explorer.p_sorted = explorer.pressure;
+%     explorer.p_sorted(to_ign)=[];
+%     explorer.temp(to_ign)=[];
+%     explorer.s(to_ign)=[];
+%     explorer.dens(to_ign)=[];
+%     explorer.W_glider(to_ign)=[];
+%     W_model(to_ign)=[];
+%     explorer.time(to_ign)=[];
+%     
+%     ind1=[];
+%     o=length(explorer.p_sorted);
+%     while explorer.p_sorted(o) < explorer.p_sorted(o-1) && o > 2
+%       % delete variations2
+%         ind1 = [ind1 o];
+%       o=o-1;
+%     end
+%     %remontada
+%     explorer.p_sorted=explorer.p_sorted(ind1);
+%     explorer.temp=explorer.temp(ind1);
+%     explorer.s=explorer.s(ind1);
+%     explorer.dens=explorer.dens(ind1);
+%     explorer.W_glider=explorer.W_glider(ind1);
+%     W_model=W_model(ind1);
+%     explorer.time=explorer.time(ind1);
+%     
+%     
+%     to_igno = [];
+%     for i=1:length(explorer.p_sorted)-1
+%      if  explorer.p_sorted(i) == explorer.p_sorted(i+1) % delete doublon
+%        to_igno = [to_igno i+1];
+%      end
+%     end
+%     
+%     explorer.p_sorted(to_igno)=[];
+%     explorer.temp(to_igno)=[];
+%     explorer.s(to_igno)=[];
+%     explorer.dens(to_igno)=[];
+%     explorer.W_glider(to_igno)=[];
+%     W_model(to_igno)=[];
+%     explorer.time(to_igno)=[];
+%     
+%     Ww=explorer.W_glider'-W_model;
+%   
+%   
+%     
+%     pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
+%     ti=interp1(explorer.p_sorted,explorer.temp,pi); 
+%     si=interp1(explorer.p_sorted,explorer.s,pi);
+%     di=interp1(explorer.p_sorted,explorer.dens,pi);
+%     wg=interp1(explorer.p_sorted,explorer.W_glider',pi);
+%     wm=interp1(explorer.p_sorted,W_model,pi);
+%     ww=interp1(explorer.p_sorted,Ww,pi);
+%     
+%          %Filter on ww 
+%     ind = find(abs(ww) > 0.03);
+%     ww(ind)=NaN;
+%    
+%     tableau_ti=[tableau_ti ti'];
+%     tableau_si=[tableau_si si'];
+%     tableau_di=[tableau_di di'];
+%     tableau_w_glider=[tableau_w_glider wg'];
+%     tableau_w_model=[tableau_w_model wm'];
+%     tableau_ww=[tableau_ww ww'];
+%     
+%     figure()
+%     plot(explorer.time,explorer.W_glider)
+%     hold on 
+%     plot(explorer.time,W_model)
+%     
+%end
+
+%figure()
+% subplot(4,1,1)
+% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
+% shading interp
+% H=colorbar;
+% ylabel(H,'       (°C)','FontSize',12,'Rotation',0);
+% grid on
+% ax = gca;
+% ax.Layer='Top';
+% xlabel('Numéro de plongée')
+% ylabel('- Pression (dbar)')
+% title('Température')
+% 
+% subplot(4,1,2)
+% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_si);   % utilisation de la fonction pcolor + "shading interp"
+% shading interp
+% H=colorbar;
+% ylabel(H,'     psu','FontSize',12,'Rotation',0);
+% grid on
+% ax = gca;
+% ax.Layer='Top';
+% xlabel('Numéro de plongée')
+% ylabel('- Pression (dbar)')
+% title('Salinité')
+% 
+% subplot(4,1,3)
+% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_di);   % utilisation de la fonction pcolor + "shading interp"
+% shading interp
+% H=colorbar;
+% ylabel(H,'          kg/m^3','FontSize',12,'Rotation',0);
+% grid on
+% ax = gca;
+% ax.Layer='Top';
+% xlabel('Numéro de plongée')
+% ylabel('- Pression (dbar)')
+% title('Densité')
+
+% subplot(4,1,4)
+% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_glider);   % utilisation de la fonction pcolor + "shading interp"
+% shading interp
+% H=colorbar;
+% ylabel(H,'          ','FontSize',12,'Rotation',0);
+% grid on
+% ax = gca;
+% ax.Layer='Top';
+% xlabel('Numéro de plongée')
+% ylabel('- Pression (dbar)')
+% title('W\_glider')
+
+% subplot(4,1,3)
+% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_model);   % utilisation de la fonction pcolor + "shading interp"
+% shading interp
+% H=colorbar;
+% ylabel(H,'          ','FontSize',12,'Rotation',0);
+% grid on
+% ax = gca;
+% ax.Layer='Top';
+% xlabel('Numéro de plongée')
+% ylabel('- Pression (dbar)')
+% title('W\_model')
+
+%subplot(4,1,4)
+% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww);   % utilisation de la fonction pcolor + "shading interp"
+% shading interp
+% H=colorbar;
+% ylabel(H,'          ','FontSize',12,'Rotation',0);
+% grid on
+% ax = gca;
+% ax.Layer='Top';
+% xlabel('Numéro de plongée')
+% ylabel('- Pression (dbar)')
+% title('Ww')
+% 
+
+
+% end
+% figure()
+% title('Evolution des paramètres optimisés')
+% subplot(3,1,1)
+% plot([2:38],Triplet(3,:),'Color','#0072BD','LineWidth',2)
+% xlabel('Numéro de plongée')
+% ylabel('Cd')
+% subplot(3,1,2)
+% plot([2:38],Triplet(1,:),'Color','#D95319','LineWidth',2)
+% xlabel('Numéro de plongée')
+% ylabel('V0')
+% subplot(3,1,3)
+% plot([2:38],Triplet(2,:),'Color','#77AC30','LineWidth',2)
+% xlabel('Numéro de plongée')
+% ylabel('eps')
+
+% 
+% figure()
+% histogram(att_deg,200)
+% xlabel('Attack angle °')
+% xlim([-4 5])
+%   
+  
 %% %% ----- Display 3D ----- %%
 % ------------------------------------- %
 
@@ -422,120 +685,79 @@ W_glider = zeros(1,explorer.size-5);
 % ------------------------------------- %
 % % 
 % 
-tableau_pitch=[];
-tableau_W_glider=[];
-b1=[];
-for j= explorer.first_dive:explorer.last_dive 
-       explorer = by_dive(tableau,j);%data by dive
-    
-     pi=[0:1:600];
-     ind = find(explorer.pressure == max(explorer.pressure));
-     explorer.pressure=explorer.pressure(50:ind-10);
-     explorer.pitch=explorer.pitch(50:ind-10);
-     explorer.time=explorer.time(50:ind-10);
-
-    W_glider = zeros(1,length(explorer.pressure)-10);
-    for k=1:length(explorer.pressure)-10
-        W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+10))/(explorer.time(k+10)-explorer.time(k));
-    end
-    W_glider = W_glider./Const.d2s;
-    
-    
-     pitch=interp1(explorer.pressure,explorer.pitch,pi);
-     W_glider = interp1(explorer.pressure(1:end-10),W_glider,pi);
-     tableau_pitch=[tableau_pitch pitch'];
-     tableau_W_glider=[tableau_W_glider W_glider'];
-     
-end
-
-for i=1:min(size(tableau_W_glider))
- tab_pitch1=tableau_pitch(:,i);
- tab_glider1=tableau_W_glider(:,i);
-to_ign=isnan(tab_pitch1);
-to_ign1=isnan(tab_glider1);
-to_ign2=to_ign+to_ign1;
-tab_pitch1(to_ign2 ~= 0)=[];
-
-pression_p=[0:600/(length(tab_pitch1)-1):600];
-tab_pitch1_1=detrend(tab_pitch1)+mean(tab_pitch1); 
-
-tab_glider1(to_ign2 ~= 0)=[];
-tab_glider1_1=detrend(tab_glider1)+mean(tab_glider1);
-
-% tab_pitch1_1=smoothdata(tab_pitch1_1,'movmedian','SmoothingFactor',0.05);
- %tab_glider1_1=smoothdata(tab_glider1_1,'movmedian','SmoothingFactor',0.05);
-%Regression
-b1 = tab_pitch1_1\tab_glider1_1;
-X = [ones(length(tab_pitch1_1),1) tab_pitch1_1];
-b = X\tab_glider1_1;
-p = polyfit(tab_pitch1_1,tab_glider1_1,2);
-
-
-figure(i)
-subplot(1,3,1)
-plot(tab_pitch1_1,-pression_p)
-title('pitch')
-subplot(1,3,2)
-plot(tab_glider1_1,-pression_p,'b')
-title('glider')
-subplot(1,3,3)
-plot(tab_pitch1_1,tab_glider1_1,'+','Color','#4DBEEE')
-hold on 
-ylabel('W_glider')
-xlabel('Pitch')
-y1=b1*tab_pitch1_1;
-y2 = X*b;
-y3 = polyval(p,tab_pitch1_1);
-plot(tab_pitch1_1,y1,'r','LineWidth',2);
-plot(tab_pitch1_1,y2,'--','LineWidth',2)
-plot(tab_pitch1_1,y3,'--','LineWidth',2,'Color','#7E2F8E')
-Rsq1 = 1 - sum((tab_glider1_1 - y1).^2)/sum((tab_glider1_1 - mean(tab_glider1_1)).^2);
-Rsq2 = 1 - sum((tab_glider1_1 - y2).^2)/sum((tab_glider1_1 - mean(tab_glider1_1)).^2);
-Rsq3 = 1 - sum((tab_glider1_1 - y3).^2)/sum((tab_glider1_1 - mean(tab_glider1_1)).^2);
-legend('W\_glider',['R\_lineaire= ' num2str(Rsq1)],['R\_affine= ' num2str(Rsq2)],['R\_polynome= ' num2str(Rsq3)])
-end
-
-%%Linear Regression%%%%%
-%Calcul coeff directeur
-
-
-% for i=1:min(size(tableau_pitch))
-% b1 = [b1 tableau_pitch(70:end-40,i)\tableau_W_glider(70:end-40,i)];
-% X = [ones(length(tableau_pitch(70:end-40,i)),1) tableau_pitch(70:end-40,i)];
-% b = [b X\tableau_W_glider(70:end-40,i)];
-% p = [p polyfit(tableau_pitch(70:end-40,i),tableau_W_glider(70:end-40,i),2)'];
+% tableau_pitch=[];
+% tableau_W_glider=[];
+% b1=[];
+% for j= explorer.first_dive:explorer.last_dive 
+%        explorer = by_dive(tableau,j);%data by dive
+%     
+%      pi=[0:1:600];
+%      ind = find(explorer.pressure == max(explorer.pressure));
+%      explorer.pressure=explorer.pressure(50:ind-10);
+%      explorer.pitch=explorer.pitch(50:ind-10);
+%      explorer.time=explorer.time(50:ind-10);
+% 
+%     W_glider = zeros(1,length(explorer.pressure)-10);
+%     for k=1:length(explorer.pressure)-10
+%         W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+10))/(explorer.time(k+10)-explorer.time(k));
+%     end
+%     W_glider = W_glider./Const.d2s;
+%     
+%     
+%      pitch=interp1(explorer.pressure,explorer.pitch,pi);
+%      W_glider = interp1(explorer.pressure(1:end-10),W_glider,pi);
+%      tableau_pitch=[tableau_pitch pitch'];
+%      tableau_W_glider=[tableau_W_glider W_glider'];
+%      
 % end
-
 % 
 % for i=1:min(size(tableau_W_glider))
-%  figure(i) 
-%  subplot(1,3,1)
-%  plot(tableau_pitch(:,i),-pi)
-%  title('pitch')
-%  ylabel('pression')
-%  subplot(1,3,2)
-%  plot(tableau_W_glider(:,i),-pi,'b')
-%  title('W\_glider')
-%  subplot(1,3,3)
-%  plot(tableau_pitch(:,i),tableau_W_glider(:,i),'+','Color','#4DBEEE')
-%  hold on 
-%  ylabel('W_glider')
-%  xlabel('Pitch')
-%  y1=b1(i)*tableau_pitch(70:end-40,i);
-%  X = [ones(length(tableau_pitch(70:end-40,i)),1) tableau_pitch(70:end-40,i)];
-%  y2 = X*b(:,i);
-%  y3 = polyval(p(:,i),tableau_pitch(70:end-40,i));
-% % plot(tableau_pitch(70:end-40,i),y1,'r','LineWidth',2);
-%  plot(tableau_pitch(70:end-40,i),y2,'--','LineWidth',2)
-%   plot(tableau_pitch(70:end-40,i),y3,'--','LineWidth',2,'Color','#7E2F8E')
-% % Rsq1 = 1 - sum((tableau_W_glider(70:end-40,i) - y1).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
-%  Rsq2 = 1 - sum((tableau_W_glider(70:end-40,i) - y2).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
-%  Rsq3 = 1 - sum((tableau_W_glider(70:end-40,i) - y3).^2)/sum((tableau_W_glider(70:end-40,i) - mean(tableau_W_glider(70:end-40,i))).^2);
-%  legend('W\_glider',['R\_affine= ' num2str(Rsq2)],['R\_polynome= ' num2str(Rsq3)])
-%  
+%  tab_pitch1=tableau_pitch(:,i);
+%  tab_glider1=tableau_W_glider(:,i);
+% to_ign=isnan(tab_pitch1);
+% to_ign1=isnan(tab_glider1);
+% to_ign2=to_ign+to_ign1;
+% tab_pitch1(to_ign2 ~= 0)=[];
+% 
+% pression_p=[0:600/(length(tab_pitch1)-1):600];
+% tab_pitch1_1=detrend(tab_pitch1)+mean(tab_pitch1); 
+% 
+% tab_glider1(to_ign2 ~= 0)=[];
+% tab_glider1_1=detrend(tab_glider1)+mean(tab_glider1);
+% 
+% % tab_pitch1_1=smoothdata(tab_pitch1_1,'movmedian','SmoothingFactor',0.05);
+%  %tab_glider1_1=smoothdata(tab_glider1_1,'movmedian','SmoothingFactor',0.05);
+% %Regression
+% b1 = tab_pitch1_1\tab_glider1_1;
+% X = [ones(length(tab_pitch1_1),1) tab_pitch1_1];
+% b = X\tab_glider1_1;
+% p = polyfit(tab_pitch1_1,tab_glider1_1,2);
+% 
+% 
+% figure(i)
+% subplot(1,3,1)
+% plot(tab_pitch1_1,-pression_p)
+% title('pitch')
+% subplot(1,3,2)
+% plot(tab_glider1_1,-pression_p,'b')
+% title('glider')
+% subplot(1,3,3)
+% plot(tab_pitch1_1,tab_glider1_1,'+','Color','#4DBEEE')
+% hold on 
+% ylabel('W_glider')
+% xlabel('Pitch')
+% y1=b1*tab_pitch1_1;
+% y2 = X*b;
+% y3 = polyval(p,tab_pitch1_1);
+% plot(tab_pitch1_1,y1,'r','LineWidth',2);
+% plot(tab_pitch1_1,y2,'--','LineWidth',2)
+% plot(tab_pitch1_1,y3,'--','LineWidth',2,'Color','#7E2F8E')
+% Rsq1 = 1 - sum((tab_glider1_1 - y1).^2)/sum((tab_glider1_1 - mean(tab_glider1_1)).^2);
+% Rsq2 = 1 - sum((tab_glider1_1 - y2).^2)/sum((tab_glider1_1 - mean(tab_glider1_1)).^2);
+% Rsq3 = 1 - sum((tab_glider1_1 - y3).^2)/sum((tab_glider1_1 - mean(tab_glider1_1)).^2);
+% legend('W\_glider',['R\_lineaire= ' num2str(Rsq1)],['R\_affine= ' num2str(Rsq2)],['R\_polynome= ' num2str(Rsq3)])
 % end
 % 
 % 
-
 
 
