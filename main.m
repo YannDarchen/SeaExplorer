@@ -8,31 +8,44 @@ addpath('Data_Stage');
 addpath('Fonction');
 addpath('SeaWater');
 
+%%% Choose what dives you want
+explorer.first_dive = 10;
+explorer.last_dive = 15;
+
 %%% Choose what you want to see
 yes=1;
 no=0;
+
 Display_Web_Map = no;
 Display_Map_Figure = no;
 Lat_Lon = no;
+Depth_oil_pitch = yes;
+Colored_Temperature_Salinity = no;
+Display_3D_trip = no; Animation_3D = no;
+Temperature_Salinity_Profiles = no;
+
+%For vertical velocity 
+vertical_velocities = no; % always yes in order to have vertical velocities
+W_glider_W_Model = no;  three_loops_method = no;  fminsearch_method = no;
+Parameters_evolution = no;
+attack_angle = no; fminsearch_method = no; %both yes to show angle_attack 
+water_velocity_descent = no;
+water_velocity_ascent = no; sbplot = no;
+
 
 %Constant
 Const.d2s = 86400;
 Const.g=9.81; % gravité
 Const.R = 6371;
 
-%Clean Data
-%Triplet = [];   %%%%%évolution des paramètres
-%for i=2:41-3    %%fenetre glissante 
+
 
 load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
 
 %% ----- Read Data ----- %%
 % ------------------------------------- %
 
-%Choose dives wanted
- 
-explorer.first_dive = 1;
-explorer.last_dive = 63;
+%dives wanted
 i_dive= tableau(:,1) >= explorer.first_dive & tableau(:,1) <= explorer.last_dive ;
 tableau = tableau(i_dive,:);   
 
@@ -58,11 +71,12 @@ end
 %% ----- Display Map Figure + gif -------------------------- %%
 % ----------------------------------------------------------- %
 if Display_Map_Figure == 1
-
+    
+    pause(1.5)
     %h = figure;
     %axis off
     %filename = 'trajectoire.gif';
-    figure()
+    figure('Name','Map','NumberTitle','off','Units','centimeters','Position',[1,15,15,11]);
     load coastlines
     axesm('ortho','origin',[45 0]);
     axesm('mercator','MapLatLimit',[42 44],'MapLonLimit',[7 10])
@@ -100,8 +114,9 @@ end
 
 
 if Lat_Lon == 1
-
-    figure()
+    
+    pause(1.5)
+    figure('Name','Latitude and Longitude','NumberTitle','off','Units','centimeters','Position',[17,15,15,11]);
     subplot(2,1,1)
     plot(explorer.time,explorer.lat,'LineWidth',2)
     title('Evolution de la latitude')
@@ -119,126 +134,196 @@ end
 %% %% ----- Display depth, oil volume, pitch ----- %%
 % ------------------------------------- %
 
-% figure()
-% yyaxis left
-% plot(explorer.time,-explorer.depth,'LineWidth',1)
-% hold on 
-% plot(explorer.time,explorer.oil,'LineWidth',1)
-% ylabel('profondeur(m), huile (ml)')
-% yyaxis right
-% plot(explorer.time,explorer.pitch,'LineWidth',1)
-% hold off
-% title('Profondeur, huile, pitch')
-% ylabel('pitch (°)')
-% datetick('x',0,'keepticks')
-% legend('profondeur','volume huile','pitch')
-% 
+if Depth_oil_pitch == 1
+    
+    
+%     TF = isoutlier(explorer.pitch);
+%     ind = find(TF)
+%     Aoutlier = explorer.pitch(ind);
+%     Afill = filloutliers(explorer.pitch,'next');
+    pause(1.5)
+    figure('Name','depth oil volume and pitch','NumberTitle','off','Units','centimeters','Position',[33,15,15,11]);
+    yyaxis left
+    plot(explorer.time,-explorer.depth,'LineWidth',1)
+    hold on 
+    plot(explorer.time,explorer.oil,'LineWidth',1)
+    ylabel('profondeur(m), huile (ml)')
+    yyaxis right
+    plot(explorer.time,explorer.pitch,'LineWidth',1)
+    hold off
+    title('Profondeur, huile, pitch')
+    ylabel('pitch (°)')
+    datetick('x',0,'keepticks')
+    legend('profondeur','volume huile','pitch')
 
+end
 
 %% %% ----- Display temperature and salinity ----- %%
 % ------------------------------------- %
 
 % %partition in dive
-% tableau_ti=[];
-% tableau_si=[];
-% 
-% for j= explorer.first_dive:explorer.last_dive %data by dive
-%     i_dive1 = tableau(:,1) == j;
-%     tableau_dive = tableau(i_dive1,:);
-%     explorer.p = tableau_dive(:,17); %pression
-%     explorer.t = tableau_dive(:,18); %température
-%     explorer.c = tableau_dive(:,19); % conductivité
-%     
-%     %Remove NaN
-%     to_ignore_t=isnan(explorer.t);
-%     to_ignore_c=isnan(explorer.c);
-%     to_ignore = to_ignore_t + to_ignore_c;
-%     explorer.t(to_ignore ~= 0 )=[];
-%     explorer.c(to_ignore ~= 0 )=[];
-%     explorer.p(to_ignore ~= 0 )=[];
-%     
-%     %Conversion conductivité -> salinité 
-%     %Coefficients 
-%     a0 = 0.008;
-%     a1 = -0.1692;
-%     a2 = 25.3851;
-%     a3 = 14.0941;
-%     a4 = -7.0261;
-%     a5 = 2.7081;
-%     b0 = 0.0005;
-%     b1 = -0.0056;
-%     b2 = -0.0066;
-%     b3 = -0.0375;
-%     b4 = 0.0636;
-%     b5 = -0.0144;
-%     c0 = 0.6766097;
-%     c1 = 0.0200564;
-%     c2 = 0.0001104259;
-%     c3 = -6.9698e-07;
-%     c4 = 0.000000001;
-%     k=0.0162;
-%     
-%  
-%     D = ((explorer.c*10)/42.914)./(c0 + c1*explorer.t + c2*(explorer.t.^2)+c3*(explorer.t.^3)+c4*(explorer.t.^4));
-%     explorer.s = a0 + a1*D.^0.5 + a2*D + a3*D.^1.5 + a4*D.^2 + a5*D.^2.5 +((explorer.t-15)./(1+k*(explorer.t-15))).*(b0+b1*D.^0.5+b2*D+b3*D.^1.5+b4*D.^2+b5*D.^2.5);
-%     
-%     to_ign=[];
-%     max_ind = find(explorer.p == max(explorer.p));
-%     i=1;
-%     while explorer.p(i) ~= max(explorer.p)
-%       if  not(explorer.p(i)<explorer.p(i+1)) % delete variations
-%         to_ign = [to_ign i+1];
-%       end
-%       i=i+1;
-%     end
-%     to_ign = [to_ign max_ind:length(explorer.p)]; % taking only descent 
-%     explorer.p_sorted = explorer.p;
-%     explorer.p_sorted(to_ign)=[];
-%     explorer.t(to_ign)=[];
-%     explorer.s(to_ign)=[];
-%     to_igno = [];
-%     for i=1:length(explorer.p_sorted)-1
-%      if  explorer.p_sorted(i) == explorer.p_sorted(i+1) % delete doublon
-%        to_igno = [to_igno i+1];
-%      end
-%     end
-%     
-%     explorer.p_sorted(to_igno)=[];
-%     explorer.t(to_igno)=[];
-%     explorer.s(to_igno)=[];
-%     pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
-%     ti=interp1(explorer.p_sorted,explorer.t,pi); 
-%     si=interp1(explorer.p_sorted,explorer.s,pi);
-%     tableau_ti=[tableau_ti ti'];
-%     tableau_si=[tableau_si si'];
-%     
-% end
-% 
-% figure()
-% subplot(2,1,1)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'   (°C)','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('Température')
-% 
-% subplot(2,1,2)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_si);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'   (°C)','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('Salinité')
 
+if Colored_Temperature_Salinity == 1
+    pause(1.5)
+    
+    tableau_ti=[];
+    tableau_si=[];
+
+    for j= explorer.first_dive:explorer.last_dive %data by dive
+       explorer = by_dive(tableau,j,explorer);%data by dive
+
+        to_ign=[];
+        max_ind = find(explorer.pressure == max(explorer.pressure));
+        i=1;
+        while explorer.pressure(i) ~= max(explorer.pressure)
+          if  not(explorer.pressure(i)<explorer.pressure(i+1)) % delete variations
+            to_ign = [to_ign i+1];
+          end
+          i=i+1;
+        end
+        to_ign = [to_ign max_ind:length(explorer.pressure)]; % taking only descent 
+        explorer.p_sorted = explorer.pressure;
+        explorer.p_sorted(to_ign)=[];
+        explorer.temp(to_ign)=[];
+        explorer.s(to_ign)=[];
+        to_igno = [];
+        for i=1:length(explorer.p_sorted)-1
+         if  explorer.p_sorted(i) == explorer.p_sorted(i+1) % delete doublon
+           to_igno = [to_igno i+1];
+         end
+        end
+
+        explorer.p_sorted(to_igno)=[];
+        explorer.temp(to_igno)=[];
+        explorer.s(to_igno)=[];
+        pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
+        ti=interp1(explorer.p_sorted,explorer.temp,pi); 
+        si=interp1(explorer.p_sorted,explorer.s,pi);
+        tableau_ti=[tableau_ti ti'];
+        tableau_si=[tableau_si si'];
+
+    end
+
+    figure('Name','Temperature and Salinity','NumberTitle','off','Units','centimeters','Position',[1,1.5,15,11]);
+    subplot(2,1,1)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'       (°C)','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Température')
+
+    subplot(2,1,2)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_si);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'   psu','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Salinité')
+
+end
+
+
+  
+%% %% ----- Display 3D ----- %%
+% ------------------------------------- %
+
+if Display_3D_trip == 1
+    pause(0.1)
+    explorer = read_EXPLORER(tableau,explorer);
+    ind = [];
+    for j = 1:explorer.size-1
+        if explorer.dive(j) ~= explorer.dive(j+1) && mod(explorer.dive(j),2)==0 %collect first points of dives 
+           ind  = [ind j+1]; 
+        end
+    end
+
+    explorer.lat_i=explorer.lat(ind);
+    explorer.time_i=explorer.time(ind);
+    time_interp = linspace(explorer.time_i(1),explorer.time_i(end),(explorer.last_dive-explorer.first_dive)*150);
+    %figure()
+    explorer.lat_interp = interp1(explorer.time_i,explorer.lat_i,time_interp,'spline');
+    %plot(explorer.time_i,explorer.lat_i,'o',time_interp,explorer.lat_interp,':.');
+
+    explorer.lon_i=explorer.lon(ind);
+    %figure()
+    explorer.lon_interp = interp1(explorer.time_i,explorer.lon_i,time_interp,'spline');
+    %plot(explorer.time_i,explorer.lon_i,'o',time_interp,explorer.lon_interp,':.');
+    
+    %Filter on explorer.time
+    to_ign=[];
+    for i=1:length(explorer.time)-1
+        if explorer.time(i)> explorer.time(i+1) || explorer.time(i)==explorer.time(i+1)
+            to_ign=[to_ign i];
+        end
+    end
+    explorer.time(to_ign)=[];
+    explorer.depth(to_ign)=[];
+    explorer.temp(to_ign)=[];
+
+    explorer.depth_interp = interp1(explorer.time,explorer.depth,time_interp,'spline');
+    explorer.temp_interp = interp1(explorer.time,explorer.temp,time_interp,'pchip');
+    %plot(explorer.time,explorer.temp,'o',time_interp,explorer.temp_interp,':.')
+    
+    X = explorer.lat_interp;
+    Y = explorer.lon_interp;
+    Z = -explorer.depth_interp;
+    C = explorer.temp_interp;
+    Z(end)=NaN;
+    C(end)=NaN;
+    figure('Name','3D_Trip_Temperature','NumberTitle','off','Units','centimeters','Position',[17,1.5,15,11]);
+
+    fill3(X,Y,Z,C,'EdgeColor','w','LineWidth',1)
+    c = colorbar;
+    c.Label.String = 'Température °C';
+    title('Trajectoire du glider')
+    xlabel('latitude')
+    ylabel('longitude')
+    zlabel('profondeur (m)')
+    hold on 
+    for j= 1:length(explorer.lat_interp)
+
+        fill3(X(j),Y(j),Z(j),C(j),'EdgeColor','interp','Marker','o','MarkerFaceColor','flat')
+        if Animation_3D == 1 
+            drawnow
+        end
+    end
+    hold off
+    v = [1 -3 3];
+    [caz,cel] = view(v);
+end
+
+%% %% ----- Display temperature and salinity profile ----- %%
+% ------------------------------------- %
+
+if Temperature_Salinity_Profiles == 1
+    pause(1.5)
+    explorer = read_EXPLORER(tableau,explorer);
+    
+    figure('Name','Temperature_Salinity_Density_Profiles','NumberTitle','off','Units','centimeters','Position',[33,1.5,15,11]);
+    subplot(1,3,1)
+    plot(explorer.temp,-explorer.pressure,'b')
+    title('Température')
+    ylabel('Pression (dbar)')
+    xlabel('°C')
+    subplot(1,3,2)
+    plot(explorer.s,-explorer.pressure,'r')
+    title('Salinité')
+    xlabel('psu')
+    subplot(1,3,3)
+    plot(explorer.dens,-explorer.pressure,'k')
+    title('Masse volumique')
+    xlabel('kg/m^3')
+
+end
 
 %% %% ----- Display vertical velocities ----- %%
 % ------------------------------------- %
@@ -247,398 +332,586 @@ end
 % W_model : velocity from the model
 % W_glider : Pressure/time
 % W = W_glider - W_model
-% 
+if vertical_velocities == 1
+    pause(1.5)
+    explorer = read_EXPLORER(tableau,explorer);
 
+W_glider = zeros(1,explorer.size-5);
+    for k=1:explorer.size-5
+    W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+    end
 
-% W_glider = zeros(1,explorer.size-5);
-%     for k=1:explorer.size-5
-%     W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
-%     end
-%     
-%    % W_glider1 =smoothdata(W_glider./Const.d2s,'movmedian');
-%    explorer.W_glider = W_glider./Const.d2s;
-
-%%%%%%%%%%%%%%%%% Méthode 3 boucles %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%---------------------------------------------------------------------%
-% F=[];
-% Triplet = [];
-% dt=30;
-% V0_min=0.0571;
-% V0_max=0.0575;
-% alpha_min=2e-10;
-% alpha_max=5e-10;
-% Cd_min=0.08;
-% Cd_max=0.12;
-% W_model_tot=[];
-% A_tot=[];
-% for V0=V0_min:(V0_max-V0_min)/dt:V0_max
-%     for alpha=alpha_min:(alpha_max-alpha_min)/dt:alpha_max 
-%         for Cd=Cd_min:(Cd_max-Cd_min)/dt:Cd_max
-%            [W_model] = flight_model(explorer.pressure,explorer.dens,...
-%                          explorer.pitch,explorer.oil,explorer.temp,V0,alpha,Cd,explorer.M);
-%             %B=abs(mean((explorer.W_glider'.^2-W_model(1:end-5).^2)));
-%            A=explorer.W_glider'.^2-W_model(1:end-5).^2;
-%             B=sum(abs(A));       
-%             disp(B)
-%             F=[F B];
-%             Triplet = [Triplet [V0 alpha Cd]'];
-%         end 
-%     end
-% end
-% % 
-% opt =find(F == min(abs(F)) | F == -min(abs(F)));
-% disp(min(abs(F)))
-% explorer.V0 = Triplet(1,opt);
-% explorer.alpha = Triplet(2,opt);
-% explorer.Cd=Triplet(3,opt);
-% 
-% [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(explorer.pressure,explorer.dens,...
-%                          explorer.pitch,explorer.oil,explorer.temp,explorer.V0,explorer.alpha,explorer.Cd,explorer.M);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   explorer.W_glider = W_glider./Const.d2s;
+ 
+%%%%%%%%%%%%%%%% Méthode 3 boucles %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
 
-%%%%%%%%%%%%%%%%% Méthode fminsearch %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%---------------------------------------------------------------------%
-% 
-
-
-% global pres dens pitch oil_vol Wglider temp mg
-% pres=explorer.pressure;
-% dens=explorer.dens;
-% pitch=explorer.pitch;
-% oil_vol=explorer.oil;
-% Wglider=explorer.W_glider;
-% temp=explorer.temp;
-% mg=explorer.M;
-% 
-% param0 = [explorer.V0,explorer.alpha,explorer.Cd];
-% options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
-% [x,fval,exitflag,output] = fminsearch('cost',param0,options);
-%[W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
-
-% 
-% %Remove spikes
-% ind = find(W_model<-0.3);
-% W_model(ind)=NaN;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%---------------------------------------------------------------------%
-
-
-
-
-% %  %W = W_glider'-W_model(1:end-5);                    
-%  figure()
-%  plot(explorer.time(1:end-5), explorer.W_glider,'LineWidth',1.5)
-%   hold on 
-% % % 
-%   plot(explorer.time,W_model,'LineWidth',1.5)
-% % % %plot(explorer.time(1:end-10),W,'LineWidth',1.5)
-%   datetick('x',0,'keepticks')
-%   legend('W\_glider','W\_model','W')
-
-%Triplet = [Triplet x'];
-%%%Contourf vitesse %%%
-% tableau_ti=[];
-% tableau_si=[];
-% tableau_di=[];
-% tableau_w_glider=[];
-% tableau_w_model=[];
-% tableau_ww=[];
-% for j= explorer.first_dive:explorer.last_dive 
-%        explorer = by_dive(tableau,j,explorer);%data by dive
-%        
-%        W_glider = zeros(1,explorer.size-5);
-%     for k=1:explorer.size-5
-%     W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
-%     end
-%     
-%    explorer.W_glider = W_glider./Const.d2s;
-%    pres=explorer.pressure;
-%    dens=explorer.dens;
-%    pitch=explorer.pitch;
-%    oil_vol=explorer.oil;
-%    Wglider=explorer.W_glider;
-%    temp=explorer.temp;
-%    mg=explorer.M;
-% 
-%    [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
-
-   %descent
-%    explorer.pressure=explorer.pressure(1:end-5);
-%    explorer.temp=explorer.temp(1:end-5);
-%    explorer.s=explorer.s(1:end-5);
-%    explorer.dens=explorer.dens(1:end-5);
-%    W_model=W_model(1:end-5);
-%    explorer.time=explorer.time(1:end-5);
-   %remontada
-%    explorer.pressure=explorer.pressure(6:end);
-%    explorer.temp=explorer.temp(6:end);
-%    explorer.s=explorer.s(6:end);
-%    explorer.dens=explorer.dens(6:end);
-%    W_model=W_model(6:end);
-%    explorer.time=explorer.time(6:end);
-   %descent
-%    to_ign=[];
-%     max_ind = find(explorer.pressure == max(explorer.pressure));
-%     i=1;
-%     while explorer.pressure(i) ~= max(explorer.pressure)
-%       if  not(explorer.pressure(i)<explorer.pressure(i+1)) % delete variations
-%         to_ign = [to_ign i+1];
-%       end
-%       i=i+1;
-%     end
+if three_loops_method == 1 
     
-    %remontada
-%     to_ign=[];
-%     max_ind = find(explorer.pressure == max(explorer.pressure));
-%     i=max_ind;
-%     while explorer.pressure(i) ~= explorer.pressure(end)
-%       if  not(explorer.pressure(i)>explorer.pressure(i+1)) % delete variations
-%         to_ign = [to_ign i+1];
-%       end
-%       i=i+1;
-%     end
-%     
-%     %to_ign = [to_ign max_ind:length(explorer.pressure)]; % taking only descent 
-%     to_ign = [to_ign 1:max_ind]; % taking only remontada 
-%     explorer.p_sorted = explorer.pressure;
-%     explorer.p_sorted(to_ign)=[];
-%     explorer.temp(to_ign)=[];
-%     explorer.s(to_ign)=[];
-%     explorer.dens(to_ign)=[];
-%     explorer.W_glider(to_ign)=[];
-%     W_model(to_ign)=[];
-%     explorer.time(to_ign)=[];
-%     
-%     ind1=[];
-%     o=length(explorer.p_sorted);
-%     while explorer.p_sorted(o) < explorer.p_sorted(o-1) && o > 2
-%       % delete variations2
-%         ind1 = [ind1 o];
-%       o=o-1;
-%     end
-%     %remontada
-%     explorer.p_sorted=explorer.p_sorted(ind1);
-%     explorer.temp=explorer.temp(ind1);
-%     explorer.s=explorer.s(ind1);
-%     explorer.dens=explorer.dens(ind1);
-%     explorer.W_glider=explorer.W_glider(ind1);
-%     W_model=W_model(ind1);
-%     explorer.time=explorer.time(ind1);
-%     
-%     
-%     to_igno = [];
-%     for i=1:length(explorer.p_sorted)-1
-%      if  explorer.p_sorted(i) == explorer.p_sorted(i+1) % delete doublon
-%        to_igno = [to_igno i+1];
-%      end
-%     end
-%     
-%     explorer.p_sorted(to_igno)=[];
-%     explorer.temp(to_igno)=[];
-%     explorer.s(to_igno)=[];
-%     explorer.dens(to_igno)=[];
-%     explorer.W_glider(to_igno)=[];
-%     W_model(to_igno)=[];
-%     explorer.time(to_igno)=[];
-%     
-%     Ww=explorer.W_glider'-W_model;
-%   
-%   
-%     
-%     pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
-%     ti=interp1(explorer.p_sorted,explorer.temp,pi); 
-%     si=interp1(explorer.p_sorted,explorer.s,pi);
-%     di=interp1(explorer.p_sorted,explorer.dens,pi);
-%     wg=interp1(explorer.p_sorted,explorer.W_glider',pi);
-%     wm=interp1(explorer.p_sorted,W_model,pi);
-%     ww=interp1(explorer.p_sorted,Ww,pi);
-%     
-%          %Filter on ww 
-%     ind = find(abs(ww) > 0.03);
-%     ww(ind)=NaN;
-%    
-%     tableau_ti=[tableau_ti ti'];
-%     tableau_si=[tableau_si si'];
-%     tableau_di=[tableau_di di'];
-%     tableau_w_glider=[tableau_w_glider wg'];
-%     tableau_w_model=[tableau_w_model wm'];
-%     tableau_ww=[tableau_ww ww'];
-%     
+    F=[];
+    Triplet = [];
+    dt=25;
+    V0_min=0.0572;
+    V0_max=0.0575;
+    alpha_min=2e-10;
+    alpha_max=5e-10;
+    Cd_min=0.08;
+    Cd_max=0.12;
+    W_model_tot=[];
+    A_tot=[];
+    for V0=V0_min:(V0_max-V0_min)/dt:V0_max
+        for alpha=alpha_min:(alpha_max-alpha_min)/dt:alpha_max 
+            for Cd=Cd_min:(Cd_max-Cd_min)/dt:Cd_max
+               [W_model] = flight_model(explorer.pressure,explorer.dens,...
+                             explorer.pitch,explorer.oil,explorer.temp,V0,alpha,Cd,explorer.M);
+                %B=abs(mean((explorer.W_glider'.^2-W_model(1:end-5).^2)));
+               A=explorer.W_glider'.^2-W_model(1:end-5).^2;
+                B=sum(abs(A));       
+                disp(B)
+                F=[F B];
+                Triplet = [Triplet [V0 alpha Cd]'];
+            end 
+        end
+    end
+    % 
+    opt =find(F == min(abs(F)) | F == -min(abs(F)));
+    disp(min(abs(F)))
+    explorer.V0 = Triplet(1,opt);
+    explorer.alpha = Triplet(2,opt);
+    explorer.Cd=Triplet(3,opt);
+
+    [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(explorer.pressure,explorer.dens,...
+                             explorer.pitch,explorer.oil,explorer.temp,explorer.V0,explorer.alpha,explorer.Cd,explorer.M);
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%---------------------------------------------------------------------%
+
+%%%%%%%%%%%%%%%% Méthode fminsearch %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%---------------------------------------------------------------------%
+
+if fminsearch_method == 1
+
+    global pres dens pitch oil_vol Wglider temp mg
+    pres=explorer.pressure;
+    dens=explorer.dens;
+    pitch=explorer.pitch;
+    oil_vol=explorer.oil;
+    Wglider=explorer.W_glider;
+    temp=explorer.temp;
+    mg=explorer.M;
+
+    param0 = [explorer.V0,explorer.alpha,explorer.Cd];
+    options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
+    [x,fval,exitflag,output] = fminsearch('cost',param0,options);
+    [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
+
+
+    %Remove spikes
+    ind = find(W_model<-0.3);
+    W_model(ind)=NaN;
+    
+if attack_angle == 1 
+    pause(1.5)
+    figure('Name','Attack angle','NumberTitle','off','Units','centimeters','Position',[1,15,15,11]);
+    histogram(att_deg,200)
+    title('Attack angle')
+    xlabel('Attack angle °')
+    xlim([-4 5])
+
+end
+
+
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%---------------------------------------------------------------------%
+
+
+if W_glider_W_Model == 1 
+    pause(1.5)
+
+%W = explorer.W_glider'-W_model(1:end-5);                    
+  figure('Name','Wglider and Wmodel','NumberTitle','off','Units','centimeters','Position',[17,15,15,11]);
+  plot(explorer.time(1:end-5), explorer.W_glider,'LineWidth',1.5)
+  title('Vitesses verticales du glider')
+  hold on 
+  plot(explorer.time,W_model,'LineWidth',1.5)
+  %plot(explorer.time(1:end-5),W,'LineWidth',1.5)
+  datetick('x',0,'keepticks')
+  legend('W\_glider','W\_model')
+  
+end 
+
+if Parameters_evolution == 1
+    pause(1.5)
+  explorer.first=explorer.first_dive;
+  explorer.last=explorer.last_dive;
+    Triplet = [];   %%%%%évolution des paramètres
+    for p=explorer.first:explorer.last-3    %%fenetre glissante 
+        
+        load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
+        explorer.first = p;
+        explorer.last = p+3;
+        i_dive= tableau(:,1) >= explorer.first & tableau(:,1) <= explorer.last ;
+        tableau = tableau(i_dive,:);   
+
+        %Read Data
+        explorer = read_EXPLORER(tableau,explorer);
+            
+        W_glider = zeros(1,explorer.size-5);
+        for k=1:explorer.size-5
+            W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+        end
+        explorer.W_glider = W_glider./Const.d2s;
+        
+    global pres dens pitch oil_vol Wglider temp mg
+    pres=explorer.pressure;
+    dens=explorer.dens;
+    pitch=explorer.pitch;
+    oil_vol=explorer.oil;
+    Wglider=explorer.W_glider;
+    temp=explorer.temp;
+    mg=explorer.M;
+
+    param0 = [explorer.V0,explorer.alpha,explorer.Cd];
+    options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
+    [x,fval,exitflag,output] = fminsearch('cost',param0,options);
+    
+    Triplet = [Triplet x'];
+
+    end
+    figure('Name','Parameters evolution','NumberTitle','off','Units','centimeters','Position',[33,15,15,11]);
+    title('Evolution des paramètres optimisés')
+    subplot(3,1,1)
+    plot([explorer.first_dive:explorer.last_dive-3],Triplet(3,:),'Color','#0072BD','LineWidth',2)
+    xlabel('Numéro de plongée')
+    ylabel('Cd')
+    subplot(3,1,2)
+    plot([explorer.first_dive:explorer.last_dive-3],Triplet(1,:),'Color','#D95319','LineWidth',2)
+    xlabel('Numéro de plongée')
+    ylabel('V0')
+    subplot(3,1,3)
+    plot([explorer.first_dive:explorer.last_dive-3],Triplet(2,:),'Color','#77AC30','LineWidth',2)
+    xlabel('Numéro de plongée')
+    ylabel('eps')
+
+end
+
+end
+
+%% %% ----- Display water vertical velocities ----- %%
+% ------------------------------------- %
+
+if water_velocity_descent == 1 
+    
+    load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
+    pause(1.5)
+tableau_ti=[];
+tableau_si=[];
+tableau_di=[];
+tableau_w_glider=[];
+tableau_w_model=[];
+tableau_ww=[];
+for j= explorer.first_dive:explorer.last_dive 
+       explorer = by_dive(tableau,j,explorer);%data by dive
+       W_glider = zeros(1,explorer.size-5);
+    for k=1:explorer.size-5
+    W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+    end
+    
+   explorer.W_glider = W_glider./Const.d2s;
+   
+   global pres dens pitch oil_vol Wglider temp mg
+   pres=explorer.pressure;
+   dens=explorer.dens;
+   pitch=explorer.pitch;
+   oil_vol=explorer.oil;
+   Wglider=explorer.W_glider;
+   temp=explorer.temp;
+   mg=explorer.M;
+
+   [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
+
+      %descent
+       explorer.pressure=explorer.pressure(1:end-5);
+       explorer.temp=explorer.temp(1:end-5);
+       explorer.s=explorer.s(1:end-5);
+       explorer.dens=explorer.dens(1:end-5);
+       W_model=W_model(1:end-5);
+       explorer.time=explorer.time(1:end-5);
+       %descent
+       to_ign=[];
+        max_ind = find(explorer.pressure == max(explorer.pressure));
+        i=1;
+        while explorer.pressure(i) ~= max(explorer.pressure)
+          if  not(explorer.pressure(i)<explorer.pressure(i+1)) % delete variations
+            to_ign = [to_ign i+1];
+          end
+          i=i+1;
+        end
+        to_ign = [to_ign max_ind:length(explorer.pressure)]; % taking only descent 
+        explorer.p_sorted = explorer.pressure;
+        explorer.p_sorted(to_ign)=[];
+        explorer.temp(to_ign)=[];
+        explorer.s(to_ign)=[];
+        explorer.dens(to_ign)=[];
+        explorer.W_glider(to_ign)=[];
+        W_model(to_ign)=[];
+        explorer.time(to_ign)=[];
+    
+ 
+
+    to_igno = [];
+    for i=1:length(explorer.p_sorted)-1
+     if  explorer.p_sorted(i) == explorer.p_sorted(i+1) % delete doublon
+       to_igno = [to_igno i+1];
+     end
+    end
+    
+    explorer.p_sorted(to_igno)=[];
+    explorer.temp(to_igno)=[];
+    explorer.s(to_igno)=[];
+    explorer.dens(to_igno)=[];
+    explorer.W_glider(to_igno)=[];
+    W_model(to_igno)=[];
+    explorer.time(to_igno)=[];
+    
+    Ww=explorer.W_glider'-W_model;
+  
+  
+    
+    pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
+    ti=interp1(explorer.p_sorted,explorer.temp,pi); 
+    si=interp1(explorer.p_sorted,explorer.s,pi);
+    di=interp1(explorer.p_sorted,explorer.dens,pi);
+    wg=interp1(explorer.p_sorted,explorer.W_glider',pi);
+    wm=interp1(explorer.p_sorted,W_model,pi);
+    ww=interp1(explorer.p_sorted,Ww,pi);
+    
+         %Filter on ww 
+    ind = find(abs(ww) > 0.03);
+    ww(ind)=NaN;
+   
+    tableau_ti=[tableau_ti ti'];
+    tableau_si=[tableau_si si'];
+    tableau_di=[tableau_di di'];
+    tableau_w_glider=[tableau_w_glider wg'];
+    tableau_w_model=[tableau_w_model wm'];
+    tableau_ww=[tableau_ww ww'];
+    
 %     figure()
 %     plot(explorer.time,explorer.W_glider)
 %     hold on 
 %     plot(explorer.time,W_model)
-%     
-%end
+    
+end
 
-%figure()
-% subplot(4,1,1)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'       (°C)','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('Température')
-% 
-% subplot(4,1,2)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_si);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'     psu','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('Salinité')
-% 
-% subplot(4,1,3)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_di);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'          kg/m^3','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('Densité')
+figure('Name','Water vertical velocity descent','NumberTitle','off','Units','centimeters','Position',[1,1.5,15,11]);
 
-% subplot(4,1,4)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_glider);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'          ','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('W\_glider')
+if sbplot == 1
 
-% subplot(4,1,3)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_model);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'          ','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('W\_model')
+    subplot(4,1,1)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'       (°C)','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Température')
 
-%subplot(4,1,4)
-% pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww);   % utilisation de la fonction pcolor + "shading interp"
-% shading interp
-% H=colorbar;
-% ylabel(H,'          ','FontSize',12,'Rotation',0);
-% grid on
-% ax = gca;
-% ax.Layer='Top';
-% xlabel('Numéro de plongée')
-% ylabel('- Pression (dbar)')
-% title('Ww')
-% 
+    subplot(4,1,2)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_si);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'     psu','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Salinité')
+
+    subplot(4,1,3)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_di);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'          kg/m^3','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Densité')
+
+    % subplot(4,1,4)
+    % pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_glider);   % utilisation de la fonction pcolor + "shading interp"
+    % shading interp
+    % H=colorbar;
+    % ylabel(H,'          ','FontSize',12,'Rotation',0);
+    % grid on
+    % ax = gca;
+    % ax.Layer='Top';
+    % xlabel('Numéro de plongée')
+    % ylabel('- Pression (dbar)')
+    % title('W\_glider')
+
+    % subplot(4,1,3)
+    % pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_model);   % utilisation de la fonction pcolor + "shading interp"
+    % shading interp
+    % H=colorbar;
+    % ylabel(H,'          ','FontSize',12,'Rotation',0);
+    % grid on
+    % ax = gca;
+    % ax.Layer='Top';
+    % xlabel('Numéro de plongée')
+    % ylabel('- Pression (dbar)')
+    % title('W\_model')
+    % 
+    subplot(4,1,4)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'          ','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Ww')
+else 
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'          ','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Ww')
+    
+end
+
+end
 
 
-% end
-% figure()
-% title('Evolution des paramètres optimisés')
-% subplot(3,1,1)
-% plot([2:38],Triplet(3,:),'Color','#0072BD','LineWidth',2)
-% xlabel('Numéro de plongée')
-% ylabel('Cd')
-% subplot(3,1,2)
-% plot([2:38],Triplet(1,:),'Color','#D95319','LineWidth',2)
-% xlabel('Numéro de plongée')
-% ylabel('V0')
-% subplot(3,1,3)
-% plot([2:38],Triplet(2,:),'Color','#77AC30','LineWidth',2)
-% xlabel('Numéro de plongée')
-% ylabel('eps')
+if water_velocity_ascent == 1 
+     load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
+    pause(1.5)
+tableau_ti=[];
+tableau_si=[];
+tableau_di=[];
+tableau_w_glider=[];
+tableau_w_model=[];
+tableau_ww=[];
+for j= explorer.first_dive:explorer.last_dive 
+       explorer = by_dive(tableau,j,explorer);%data by dive
+       
+       W_glider = zeros(1,explorer.size-5);
+    for k=1:explorer.size-5
+    W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+    end
+    
+   explorer.W_glider = W_glider./Const.d2s;
+   
+   global pres dens pitch oil_vol Wglider temp mg
+   pres=explorer.pressure;
+   dens=explorer.dens;
+   pitch=explorer.pitch;
+   oil_vol=explorer.oil;
+   Wglider=explorer.W_glider;
+   temp=explorer.temp;
+   mg=explorer.M;
 
-% 
-% figure()
-% histogram(att_deg,200)
-% xlabel('Attack angle °')
-% xlim([-4 5])
-%   
+   [W_model,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
+
+   
+      % remontada
+       explorer.pressure=explorer.pressure(6:end);
+       explorer.temp=explorer.temp(6:end);
+       explorer.s=explorer.s(6:end);
+       explorer.dens=explorer.dens(6:end);
+       W_model=W_model(6:end);
+       explorer.time=explorer.time(6:end);
+
+
+
+       % remontada
+        to_ign=[];
+        max_ind = find(explorer.pressure == max(explorer.pressure));
+        i=max_ind;
+        while explorer.pressure(i) ~= explorer.pressure(end)
+          if  not(explorer.pressure(i)>explorer.pressure(i+1)) % delete variations
+            to_ign = [to_ign i+1];
+          end
+          i=i+1;
+        end
+
+       to_ign = [to_ign 1:max_ind]; % taking only remontada 
+       explorer.p_sorted = explorer.pressure;
+       explorer.p_sorted(to_ign)=[];
+       explorer.temp(to_ign)=[];
+       explorer.s(to_ign)=[];
+       explorer.dens(to_ign)=[];
+       explorer.W_glider(to_ign)=[];
+       W_model(to_ign)=[];
+       explorer.time(to_ign)=[];
+
+
+        %remontada
+        ind1=[];
+        o=length(explorer.p_sorted);
+        while explorer.p_sorted(o) < explorer.p_sorted(o-1) && o > 2
+          % delete variations2
+            ind1 = [ind1 o];
+          o=o-1;
+        end
+        %remontada
+        explorer.p_sorted=explorer.p_sorted(ind1);
+        explorer.temp=explorer.temp(ind1);
+        explorer.s=explorer.s(ind1);
+        explorer.dens=explorer.dens(ind1);
+        explorer.W_glider=explorer.W_glider(ind1);
+        W_model=W_model(ind1);
+        explorer.time=explorer.time(ind1);
+
+    to_igno = [];
+    for i=1:length(explorer.p_sorted)-1
+     if  explorer.p_sorted(i) == explorer.p_sorted(i+1) % delete doublon
+       to_igno = [to_igno i+1];
+     end
+    end
+    
+    explorer.p_sorted(to_igno)=[];
+    explorer.temp(to_igno)=[];
+    explorer.s(to_igno)=[];
+    explorer.dens(to_igno)=[];
+    explorer.W_glider(to_igno)=[];
+    W_model(to_igno)=[];
+    explorer.time(to_igno)=[];
+    
+    Ww=explorer.W_glider'-W_model;
   
-%% %% ----- Display 3D ----- %%
-% ------------------------------------- %
+  
+    
+    pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
+    ti=interp1(explorer.p_sorted,explorer.temp,pi); 
+    si=interp1(explorer.p_sorted,explorer.s,pi);
+    di=interp1(explorer.p_sorted,explorer.dens,pi);
+    wg=interp1(explorer.p_sorted,explorer.W_glider',pi);
+    wm=interp1(explorer.p_sorted,W_model,pi);
+    ww=interp1(explorer.p_sorted,Ww,pi);
+    
+         %Filter on ww 
+    ind = find(abs(ww) > 0.03);
+    ww(ind)=NaN;
+   
+    tableau_ti=[tableau_ti ti'];
+    tableau_si=[tableau_si si'];
+    tableau_di=[tableau_di di'];
+    tableau_w_glider=[tableau_w_glider wg'];
+    tableau_w_model=[tableau_w_model wm'];
+    tableau_ww=[tableau_ww ww'];
+    
+%     figure()
+%     plot(explorer.time,explorer.W_glider)
+%     hold on 
+%     plot(explorer.time,W_model)
+    
+end
 
-% 
-% ind = [];
-% for j = 1:explorer.size-1
-%     if explorer.dive(j) ~= explorer.dive(j+1) && mod(explorer.dive(j),2)==0 
-%        ind  = [ind j+1]; 
-%     end
-% end
-% 
-% explorer.lat_i=explorer.lat(ind);
-% explorer.time_i=explorer.time(ind);
-% time_interp = linspace(explorer.time_i(1),explorer.time_i(end),500);
-% figure()
-% explorer.lat_interp = interp1(explorer.time_i,explorer.lat_i,time_interp,'spline');
-% plot(explorer.time_i,explorer.lat_i,'o',time_interp,explorer.lat_interp,':.');
-% 
-% explorer.lon_i=explorer.lon(ind);
-% figure()
-% explorer.lon_interp = interp1(explorer.time_i,explorer.lon_i,time_interp,'spline');
-% plot(explorer.time_i,explorer.lon_i,'o',time_interp,explorer.lon_interp,':.');
-% 
-% 
-% explorer.depth_interp = interp1(explorer.time,explorer.depth,time_interp,'spline');
-% explorer.temp_interp = interp1(explorer.time,explorer.temp,time_interp,'spline');
-% 
-% X = explorer.lat_interp;
-% Y = explorer.lon_interp;
-% Z = -explorer.depth_interp;
-% C = explorer.temp_interp;
-% Z(end)=NaN;
-% C(end)=NaN;
-% figure()
-% 
-% fill3(X,Y,Z,C,'EdgeColor','w','LineWidth',1)
-% c = colorbar;
-% c.Label.String = 'Température °C';
-% title('Trajectoire du glider')
-% xlabel('latitude')
-% ylabel('longitude')
-% zlabel('profondeur (m)')
-% hold on 
-% for j= 1:length(explorer.lat_interp)
-% 
-%     fill3(X(j),Y(j),Z(j),C(j),'EdgeColor','interp','Marker','o','MarkerFaceColor','flat')
-%     drawnow
-% end
-% hold off
+ figure('Name','Water vertical velocity ascent','NumberTitle','off','Units','centimeters','Position',[17,1.5,15,11]);
 
-%% %% ----- Display temperature and salinity profile ----- %%
-% ------------------------------------- %
+ if sbplot == 1
+ 
+     subplot(4,1,1)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'       (°C)','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Température')
 
-% figure()
-% subplot(1,3,1)
-% plot(explorer.temp,-explorer.pressure,'b')
-% title('Température')
-% ylabel('Pression (dbar)')
-% xlabel('°C')
-% subplot(1,3,2)
-% plot(explorer.s,-explorer.pressure,'r')
-% title('Salinité')
-% subplot(1,3,3)
-% plot(explorer.dens,-explorer.pressure,'k')
-% title('Masse volumique')
-% xlabel('kg/m^3')
-% 
+    subplot(4,1,2)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_si);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'     psu','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Salinité')
+
+    subplot(4,1,3)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_di);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'          kg/m^3','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Densité')
+
+    % subplot(4,1,4)
+    % pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_glider);   % utilisation de la fonction pcolor + "shading interp"
+    % shading interp
+    % H=colorbar;
+    % ylabel(H,'          ','FontSize',12,'Rotation',0);
+    % grid on
+    % ax = gca;
+    % ax.Layer='Top';
+    % xlabel('Numéro de plongée')
+    % ylabel('- Pression (dbar)')
+    % title('W\_glider')
+
+    % subplot(4,1,3)
+    % pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_w_model);   % utilisation de la fonction pcolor + "shading interp"
+    % shading interp
+    % H=colorbar;
+    % ylabel(H,'          ','FontSize',12,'Rotation',0);
+    % grid on
+    % ax = gca;
+    % ax.Layer='Top';
+    % xlabel('Numéro de plongée')
+    % ylabel('- Pression (dbar)')
+    % title('W\_model')
+    % 
+    subplot(4,1,4)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'          ','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Ww')
+ else
+     pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'          ','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Ww')
+ end
+end
 
 
 %% %% ----- Display speed up and speed down ----- %%
