@@ -14,7 +14,7 @@ global pres dens pitch oil_vol Wglider temp mg
 %cost= nanmean((Wglider'-W_model(1:end-5)).^2);
 
 A=Wglider'.^2-W_model(1:end-5).^2;
-cost=sum(abs(A)); 
+cost=nansum(abs(A)); 
 
 %A=(Wglider'-W_model(1:end-5)).^2;
 %cost=sum(abs(A)); 

@@ -9,8 +9,8 @@ addpath('Fonction');
 addpath('SeaWater');
 
 %%% Choose what dives you want
-explorer.first_dive = 10;
-explorer.last_dive = 15;
+explorer.first_dive = 1;
+explorer.last_dive = 63;
 
 %%% Choose what you want to see
 yes=1;
@@ -19,18 +19,18 @@ no=0;
 Display_Web_Map = no;
 Display_Map_Figure = no;
 Lat_Lon = no;
-Depth_oil_pitch = yes;
+Depth_oil_pitch = no;
 Colored_Temperature_Salinity = no;
 Display_3D_trip = no; Animation_3D = no;
 Temperature_Salinity_Profiles = no;
 
 %For vertical velocity 
-vertical_velocities = no; % always yes in order to have vertical velocities
-W_glider_W_Model = no;  three_loops_method = no;  fminsearch_method = no;
-Parameters_evolution = no;
-attack_angle = no; fminsearch_method = no; %both yes to show angle_attack 
-water_velocity_descent = no;
-water_velocity_ascent = no; sbplot = no;
+vertical_velocities = yes; % always yes in order to have vertical velocities
+W_glider_W_Model = yes;  three_loops_method = no;  fminsearch_method = yes;
+Parameters_evolution = yes;
+attack_angle = yes; fminsearch_method = yes; %both yes to show angle_attack 
+water_velocity_descent = yes;
+water_velocity_ascent = yes; sbplot = no;
 
 
 %Constant
@@ -76,7 +76,7 @@ if Display_Map_Figure == 1
     %h = figure;
     %axis off
     %filename = 'trajectoire.gif';
-    figure('Name','Map','NumberTitle','off','Units','centimeters','Position',[1,15,15,11]);
+    figure('Name','Map','NumberTitle','off','Units','centimeters','Position',[1,10,11,8]);
     load coastlines
     axesm('ortho','origin',[45 0]);
     axesm('mercator','MapLatLimit',[42 44],'MapLonLimit',[7 10])
@@ -116,7 +116,7 @@ end
 if Lat_Lon == 1
     
     pause(1.5)
-    figure('Name','Latitude and Longitude','NumberTitle','off','Units','centimeters','Position',[17,15,15,11]);
+    figure('Name','Latitude and Longitude','NumberTitle','off','Units','centimeters','Position',[13,10,11,8]);
     subplot(2,1,1)
     plot(explorer.time,explorer.lat,'LineWidth',2)
     title('Evolution de la latitude')
@@ -142,7 +142,7 @@ if Depth_oil_pitch == 1
 %     Aoutlier = explorer.pitch(ind);
 %     Afill = filloutliers(explorer.pitch,'next');
     pause(1.5)
-    figure('Name','depth oil volume and pitch','NumberTitle','off','Units','centimeters','Position',[33,15,15,11]);
+    figure('Name','depth oil volume and pitch','NumberTitle','off','Units','centimeters','Position',[25,10,11,8]);
     yyaxis left
     plot(explorer.time,-explorer.depth,'LineWidth',1)
     hold on 
@@ -204,7 +204,7 @@ if Colored_Temperature_Salinity == 1
 
     end
 
-    figure('Name','Temperature and Salinity','NumberTitle','off','Units','centimeters','Position',[1,1.5,15,11]);
+    figure('Name','Temperature and Salinity','NumberTitle','off','Units','centimeters','Position',[1,1,11,7]);
     subplot(2,1,1)
     pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
     shading interp
@@ -279,7 +279,7 @@ if Display_3D_trip == 1
     C = explorer.temp_interp;
     Z(end)=NaN;
     C(end)=NaN;
-    figure('Name','3D_Trip_Temperature','NumberTitle','off','Units','centimeters','Position',[17,1.5,15,11]);
+    figure('Name','3D_Trip_Temperature','NumberTitle','off','Units','centimeters','Position',[13,1,11,7]);
 
     fill3(X,Y,Z,C,'EdgeColor','w','LineWidth',1)
     c = colorbar;
@@ -308,7 +308,7 @@ if Temperature_Salinity_Profiles == 1
     pause(1.5)
     explorer = read_EXPLORER(tableau,explorer);
     
-    figure('Name','Temperature_Salinity_Density_Profiles','NumberTitle','off','Units','centimeters','Position',[33,1.5,15,11]);
+    figure('Name','Temperature_Salinity_Density_Profiles','NumberTitle','off','Units','centimeters','Position',[25,1,11,7]);
     subplot(1,3,1)
     plot(explorer.temp,-explorer.pressure,'b')
     title('Température')
@@ -414,7 +414,7 @@ if fminsearch_method == 1
     
 if attack_angle == 1 
     pause(1.5)
-    figure('Name','Attack angle','NumberTitle','off','Units','centimeters','Position',[1,15,15,11]);
+    figure('Name','Attack angle','NumberTitle','off','Units','centimeters','Position',[1,10,11,7]);
     histogram(att_deg,200)
     title('Attack angle')
     xlabel('Attack angle °')
@@ -432,7 +432,7 @@ if W_glider_W_Model == 1
     pause(1.5)
 
 %W = explorer.W_glider'-W_model(1:end-5);                    
-  figure('Name','Wglider and Wmodel','NumberTitle','off','Units','centimeters','Position',[17,15,15,11]);
+  figure('Name','Wglider and Wmodel','NumberTitle','off','Units','centimeters','Position',[13,10,11,7]);
   plot(explorer.time(1:end-5), explorer.W_glider,'LineWidth',1.5)
   title('Vitesses verticales du glider')
   hold on 
@@ -481,7 +481,7 @@ if Parameters_evolution == 1
     Triplet = [Triplet x'];
 
     end
-    figure('Name','Parameters evolution','NumberTitle','off','Units','centimeters','Position',[33,15,15,11]);
+    figure('Name','Parameters evolution','NumberTitle','off','Units','centimeters','Position',[25,10,11,7]);
     title('Evolution des paramètres optimisés')
     subplot(3,1,1)
     plot([explorer.first_dive:explorer.last_dive-3],Triplet(3,:),'Color','#0072BD','LineWidth',2)
@@ -607,7 +607,7 @@ for j= explorer.first_dive:explorer.last_dive
     
 end
 
-figure('Name','Water vertical velocity descent','NumberTitle','off','Units','centimeters','Position',[1,1.5,15,11]);
+figure('Name','Water vertical velocity descent','NumberTitle','off','Units','centimeters','Position',[1,1,11,7]);
 
 if sbplot == 1
 
@@ -824,7 +824,7 @@ for j= explorer.first_dive:explorer.last_dive
     
 end
 
- figure('Name','Water vertical velocity ascent','NumberTitle','off','Units','centimeters','Position',[17,1.5,15,11]);
+ figure('Name','Water vertical velocity ascent','NumberTitle','off','Units','centimeters','Position',[13,1,11,7]);
 
  if sbplot == 1
  
