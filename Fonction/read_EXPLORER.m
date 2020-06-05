@@ -63,6 +63,7 @@ explorer.dens = sw_dens(explorer.s,explorer.temp,explorer.pressure);
  
 explorer.size=length(explorer.lat); 
  
+%explorer.pitch = smoothdata(explorer.pitch,'rlowess',1);
  
 %% SeaExplorer caracteristics 
  

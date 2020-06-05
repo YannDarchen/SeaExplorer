@@ -1,4 +1,4 @@
-function [explorer] = by_dive(tableau,i) 
+function [explorer] = by_dive(tableau,i,explorer) 
  
 %INPUT : tableau of Data  
 %        number of Dive #i 
@@ -62,6 +62,9 @@ explorer.s = sw_salt(explorer.c*10/42.914,explorer.temp,explorer.pressure);
  
 explorer.dens = sw_dens(explorer.s,explorer.temp,explorer.pressure); 
  
+explorer.size=length(explorer.lat); 
+
+%explorer.pitch=smoothdata(explorer.pitch,'movmedian','SmoothingFactor',0.04);
 end 
  
 
