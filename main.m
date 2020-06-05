@@ -76,7 +76,7 @@ if Display_Map_Figure == 1
     %h = figure;
     %axis off
     %filename = 'trajectoire.gif';
-    figure('Name','Map','NumberTitle','off','Units','normalized','Position',[0,0.55,0.33,0.42]);
+    figure('Toolbar','none','Name','Map','NumberTitle','off','Units','normalized','Position',[0,0.55,0.33,0.42]);
     load coastlines
     axesm('ortho','origin',[45 0]);
     axesm('mercator','MapLatLimit',[42 44],'MapLonLimit',[7 10])
@@ -116,7 +116,7 @@ end
 if Lat_Lon == 1
     
     pause(1.5)
-    figure('Name','Latitude and Longitude','NumberTitle','off','Units','normalized','Position',[0.33,0.55,0.33,0.42]);
+    figure('Toolbar','none','Name','Latitude and Longitude','NumberTitle','off','Units','normalized','Position',[0.33,0.55,0.33,0.42]);
     subplot(2,1,1)
     plot(explorer.time,explorer.lat,'LineWidth',2)
     title('Evolution de la latitude')
@@ -142,7 +142,7 @@ if Depth_oil_pitch == 1
 %     Aoutlier = explorer.pitch(ind);
 %     Afill = filloutliers(explorer.pitch,'next');
     pause(1.5)
-    figure('Name','depth oil volume and pitch','NumberTitle','off','Units','normalized','Position',[0.66,0.55,0.33,0.42]);
+    figure('Toolbar','none','Name','depth oil volume and pitch','NumberTitle','off','Units','normalized','Position',[0.66,0.55,0.33,0.42]);
     yyaxis left
     plot(explorer.time,-explorer.depth,'LineWidth',1)
     hold on 
@@ -204,7 +204,7 @@ if Colored_Temperature_Salinity == 1
 
     end
 
-    figure('Name','Temperature and Salinity','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.42]);
+    figure('Toolbar','none','Name','Temperature and Salinity','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.42]);
     subplot(2,1,1)
     pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
     shading interp
@@ -279,7 +279,7 @@ if Display_3D_trip == 1
     C = explorer.temp_interp;
     Z(end)=NaN;
     C(end)=NaN;
-    figure('Name','3D_Trip_Temperature','NumberTitle','off','Units','normalized','Position',[0.33,0.05,0.33,0.42]);
+    figure('Toolbar','none','Name','3D_Trip_Temperature','NumberTitle','off','Units','normalized','Position',[0.33,0.05,0.33,0.42]);
 
     fill3(X,Y,Z,C,'EdgeColor','w','LineWidth',1)
     c = colorbar;
