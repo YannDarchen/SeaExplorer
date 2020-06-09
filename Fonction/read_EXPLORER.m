@@ -1,4 +1,4 @@
-function [explorer] = read_EXPLORER(tableau,explorer)
+function [explorer] = read_EXPLORER(tableau,explorer,Const)
 
 %INPUT : tableau of Data 
          %explorer structure
@@ -63,8 +63,34 @@ explorer.dens = sw_dens(explorer.s,explorer.temp,explorer.pressure);
  
 explorer.size=length(explorer.lat); 
  
-%explorer.pitch = smoothdata(explorer.pitch,'rlowess',1);
- 
+
+W_glider = zeros(1,explorer.size);
+    for k=1:explorer.size-5
+    W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+    end
+    for k=explorer.size-5:explorer.size
+       W_glider(k)=NaN; 
+    end
+   W_glider=fillmissing(W_glider,'previous');
+   
+   explorer.W_glider = W_glider./Const.d2s;
+
+
+
+
+explorer.pitch_filter=[];
+explorer.W_glider_filter=[];
+for j=explorer.first:explorer.last
+    
+   explorer1=by_dive(tableau,j,explorer,Const);
+   %Filter pitch 
+   explorer.pitch_filter = [explorer.pitch_filter explorer1.pitch'];
+   
+   %Filter W_glider 
+   explorer.W_glider_filter = [explorer.W_glider_filter explorer1.W_glider];
+end
+
+
 %% SeaExplorer caracteristics 
  
 explorer.M = 59; % Mass in kg 

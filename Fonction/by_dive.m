@@ -1,4 +1,4 @@
-function [explorer] = by_dive(tableau,i,explorer) 
+function [explorer] = by_dive(tableau,i,explorer,Const) 
  
 %INPUT : tableau of Data  
 %        number of Dive #i 
@@ -64,7 +64,35 @@ explorer.dens = sw_dens(explorer.s,explorer.temp,explorer.pressure);
  
 explorer.size=length(explorer.lat); 
 
-%explorer.pitch=smoothdata(explorer.pitch,'movmedian','SmoothingFactor',0.04);
+
+W_glider = zeros(1,explorer.size);
+    for k=1:explorer.size-5
+    W_glider(k) = (explorer.pressure(k)-explorer.pressure(k+5))/(explorer.time(k+5)-explorer.time(k));
+    end
+    for k=explorer.size-5:explorer.size
+       W_glider(k)=NaN; 
+    end
+   W_glider=fillmissing(W_glider,'previous');
+   
+   explorer.W_glider = W_glider./Const.d2s;
+
+
+   %Filter Pitch
+   ind_moins = explorer.pitch <0;
+   pitch_negatif = explorer.pitch(ind_moins);
+   Mean_moins =mean(pitch_negatif);
+   to_ign = explorer.pitch < Mean_moins -0.5;
+   explorer.pitch(to_ign)=NaN;
+   explorer.pitch = fillmissing(explorer.pitch,'next');
+
+   %Filter W_glider 
+   ind_neg = explorer.W_glider < 0;
+   negatif = explorer.W_glider(ind_neg);
+   [TF] = isoutlier(negatif,'percentiles',[3 100]);
+   explorer.W_glider(TF)=NaN;
+   explorer.W_glider = fillmissing(explorer.W_glider,'next');
+
+
 end 
  
 
