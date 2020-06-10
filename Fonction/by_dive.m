@@ -31,7 +31,7 @@ explorer.pitch = tableau_dive(:,15);
 explorer.pressure = tableau_dive(:,17); 
 explorer.temp = tableau_dive(:,18); 
 explorer.c = tableau_dive(:,19); 
- 
+explorer.pitch=explorer.pitch;
  
 %Remove NaN 
 to_ignore.lat=isnan(explorer.lat); 

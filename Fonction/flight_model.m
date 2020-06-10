@@ -1,4 +1,4 @@
-function [wg,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg,aw,ah,Cd1w,Cd1h,alphat)
+function [wg,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg)
 %%%%%
 % Glider flight model (adapted from Merckelbach et al JAOT 2010), Anthony Bosse (abolod@locean-ipsl.upmc.fr), September 2015
 % INPUT variables :
@@ -25,10 +25,10 @@ function [wg,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(p,rho,pitch,dvbp,temp,Vg,
 % constant parameters for SLOCUM 
 g = 9.81;
 S = 0.1; %section hull 0.05
-%aw =3.7; % initil 3.7
-%ah = 2.4; % in debate
-%Cd1w = 0.78; % initial 0.78
-%Cd1h = 2.1;
+aw =3.7; % initil 3.7
+ah = 2.4; % in debate
+Cd1w = 0.78; % initial 0.78
+Cd1h = 2.1;
 
 % Angles
 pitch = pitch * (pi/180); % d2r
@@ -58,7 +58,7 @@ att_deg = att*(180/pi);
 % Vertical forces
 Fg = mg*g;
 
-%alphat= 7.05e-5;% thermic compressibility
+alphat= 7.05e-5;% thermic compressibility
 Fb = g*(rho).*(Vg*(1-eps*(p*10000)+alphat.*(temp-13.2))+dvbp/1000000);
 
 % Glider speeds through water

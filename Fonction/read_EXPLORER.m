@@ -30,6 +30,7 @@ explorer.pitch = tableau(:,15);
 explorer.pressure = tableau(:,17);
 explorer.temp = tableau(:,18);
 explorer.c = tableau(:,19);
+explorer.pitch=explorer.pitch+10;
 
 
 %Remove NaN
@@ -93,8 +94,8 @@ end
 
 %% SeaExplorer caracteristics 
  
-explorer.M = 59; % Mass in kg 
-explorer.V0 = 0.0573; %Volume 
+explorer.M = 61.223; % Mass in kg 
+explorer.V0 = 0.0595; %Volume 
 explorer.alpha = 3*10^-10; %compressibility %Pa^-1 
 explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique  
 explorer.T0=20; % température 
