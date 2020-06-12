@@ -45,9 +45,9 @@ Const.g=9.81; % gravité
 Const.R = 6371;
 
 
-nom_de_fichier = 'BioswotSeaExplorer_Nav&CTD.mat';
+%nom_de_fichier = 'BioswotSeaExplorer_Nav&CTD.mat';
 %load('Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat');
-load(nom_de_fichier);
+%load(nom_de_fichier);
 load('blue_red_cmap.mat')
 %% ----- Read Data ----- %%
 % ------------------------------------- %
