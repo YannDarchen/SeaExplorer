@@ -101,12 +101,19 @@ W_glider = NaN(explorer.size,min(size(explorer.lat)));
   explorer.pitch_filter=explorer.pitch;
    %Filter Pitch
    for k=1:min(size(explorer.lat))  %each column
+%        
+%        ind_moins = explorer.pitch_filter(:,k) <0;
+%        pitch_negatif = explorer.pitch_filter(ind_moins,k);
+%        [TF] = isoutlier(pitch_negatif,'percentiles',[4 100]);
+%        explorer.pitch_filter(TF,k)=NaN;
+%        explorer.pitch_filter = fillmissing(explorer.pitch_filter,'next');
        
-       ind_moins = explorer.pitch_filter(:,k) <0;
-       pitch_negatif = explorer.pitch_filter(ind_moins,k);
-       [TF] = isoutlier(pitch_negatif,'percentiles',[4 100]);
-       explorer.pitch_filter(TF,k)=NaN;
-       explorer.pitch_filter = fillmissing(explorer.pitch_filter,'next');
+         ind_moins = explorer.pitch_filter(:,k) <0;
+   pitch_negatif = explorer.pitch_filter(ind_moins,k);
+   Mean_moins =mean(pitch_negatif);
+   to_ign = explorer.pitch_filter(:,k) < Mean_moins -0.5;
+   explorer.pitch_filter(to_ign,k)=NaN;
+   explorer.pitch_filter = fillmissing(explorer.pitch_filter,'next');
     
    end
    explorer.W_glider_filter=explorer.W_glider;

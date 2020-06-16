@@ -1,4 +1,4 @@
-function [wg,U,att,Fg,Fb,Fl,Fd,att_deg] = flight_model(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg)
+function [wg,att_deg,U,att,Fg,Fb,Fl,Fd] = flight_model(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg)
 %%%%%
 % Glider flight model (adapted from Merckelbach et al JAOT 2010), Anthony Bosse (abolod@locean-ipsl.upmc.fr), September 2015
 % INPUT variables :

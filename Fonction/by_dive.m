@@ -78,12 +78,14 @@ W_glider = zeros(1,explorer.size);
 
 
    %Filter Pitch
-   ind_moins = explorer.pitch <0;
+  ind_moins = explorer.pitch <0;
    pitch_negatif = explorer.pitch(ind_moins);
    Mean_moins =mean(pitch_negatif);
    to_ign = explorer.pitch < Mean_moins -0.5;
-   explorer.pitch(to_ign)=NaN;
+  explorer.pitch(to_ign)=NaN;
    explorer.pitch = fillmissing(explorer.pitch,'next');
+   
+   
 
    %Filter W_glider 
    ind_neg = explorer.W_glider < 0;

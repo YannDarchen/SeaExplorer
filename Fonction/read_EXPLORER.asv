@@ -109,16 +109,16 @@ explorer.Cd=0.1; % coefficient de trainée
 
 
 %%% Acceleration
-explorer.W_glider_acc = zeros(1,explorer.size);
+W_glider_acc = zeros(1,explorer.size);
     for k=1:explorer.size-5
-    explorer.W_glider_acc(k) = (explorer.W_glider_filter(k)-explorer.W_glider_filter(k+5))/(explorer.time(k+5)-explorer.time(k));
+    W_glider_acc(k) = (explorer.W_glider_filter(k)-explorer.W_glider_filter(k+5))/(explorer.time(k+5)-explorer.time(k));
     end
     for k=explorer.size-5:explorer.size
-       explorer.W_glider_acc(k)=NaN; 
+       W_glider(k)=NaN; 
     end
-   explorer.W_glider_acc=fillmissing(explorer.W_glider_acc,'previous');
+   W_glider=fillmissing(W_glider,'previous');
    
-   
+   explorer.W_glider = W_glider./Const.d2s;
  
 end
 
