@@ -8,11 +8,11 @@ addpath('Data_Stage');
 addpath('Fonction');
 addpath('SeaWater');
 
-%data_name ='BioswotSeaExplorer_Nav&CTD.mat';
-data_name ='Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat';
+data_name ='BioswotSeaExplorer_Nav&CTD.mat';
+%data_name ='Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat';
 data=load(data_name);
 %Select Year
-Year = [2019];
+Year = [2018];
 i_ign= data.tableau(:,2) ~= Year ;
 ign=i_ign(:,1);
 if length(Year)>1
@@ -49,9 +49,9 @@ data.tableau(:,19)=fillmissing(data.tableau(:,19),'previous');
 
 %%% Choose what dives you want
 
-explorer.first_dive = 10; %default is 1 
-%explorer.last_dive = data.tableau(end,1); %default is last 
-explorer.last_dive = 40;
+explorer.first_dive = 1; %default is 1 
+explorer.last_dive = data.tableau(end,1); %default is last 
+%explorer.last_dive = 40;
 explorer.first=explorer.first_dive; % in case you need to change this value 
 explorer.last=explorer.last_dive;
 
@@ -62,13 +62,13 @@ no=0;
 Display_Web_Map = no;
 Display_Map_Figure = no;
 Lat_Lon = no;
-Depth_oil_pitch = yes;
+Depth_oil_pitch = no;
 Colored_Temperature_Salinity = no;
 Display_3D_trip = no; Animation_3D = no; %be careful animation can be very long 5 dives is recommended
 Temperature_Salinity_Profiles = no;
 
 %For vertical velocity 
-vertical_velocities = yes; % always yes in order to calculate vertical velocities
+vertical_velocities = no; % always yes in order to calculate vertical velocities
 W_glider_W_Model = no;  attack_angle_bydive = no; attack_angle_all = no;
 Parameters_evolution = no; Parameters_evolution_bydive =no;
 water_velocity_descent_bydive = no; hist_desc = no;
@@ -1476,9 +1476,13 @@ end
 
 
 figure()
-plot(explorer_all.time,explorer_all.M*explorer_all.W_glider_acc)
+yyaxis left
+plot(explorer_all.time,explorer_all.M.*explorer_all.W_glider_acc,'-+')
+hold on 
+%yyaxis right
+%plot(explorer_all.time,explorer_all.pitch_filter,'-+')
 title('M*acceleration')
-
+legend('acceleration','pitch')
 
 
 
