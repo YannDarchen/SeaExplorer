@@ -99,7 +99,7 @@ end
 %% SeaExplorer caracteristics 
  
 explorer.M = 61.7; % Mass in kg 
-explorer.V0 = 0.0599; %Volume 
+explorer.V0 = 0.05995; %Volume 
 explorer.alpha = 4*10^-10; %compressibility %Pa^-1 
 explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique  
 explorer.T0=20; % température 
@@ -121,10 +121,10 @@ explorer.W_glider_acc = diff(W_glider_lisse)'./(diff(explorer.time)*Const.d2s);
 %     end
   % explorer.W_glider_acc=fillmissing(explorer.W_glider_acc,'previous');
    
-   
-   explorer.W_glider_filter = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.02);
+ %Lissage
+ explorer.W_glider_filter = W_glider_lisse;
  explorer.pitch_filter = smoothdata(explorer.pitch_filter,'SmoothingFactor',0.017);
-  explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
+ explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
 
 end
 

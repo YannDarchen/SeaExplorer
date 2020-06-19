@@ -1,1 +1,3 @@
-explorer4_bydive=explorer3_bydive;
+for k=1:2:10
+   disp(k) 
+end

@@ -128,9 +128,9 @@ W_glider = NaN(explorer.size,min(size(explorer.lat)));
    end
 %    
 %     
- explorer.W_glider_filter = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.02);
- explorer.pitch_filter = smoothdata(explorer.pitch_filter,'SmoothingFactor',0.017);
-  explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
+ explorer.W_glider_filter = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.0001);
+ explorer.pitch_filter = smoothdata(explorer.pitch_filter,'SmoothingFactor',0.008);
+ explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
 
   sz=size(explorer.pressure);
   explorer.W_glider_acc = NaN(sz(1),sz(2));
