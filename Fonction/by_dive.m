@@ -94,7 +94,9 @@ W_glider = zeros(1,explorer.size);
    explorer.W_glider(TF)=NaN;
    explorer.W_glider = fillmissing(explorer.W_glider,'next');
 
-
+ explorer.W_glider = smoothdata(explorer.W_glider,'SmoothingFactor',0.02);
+ explorer.pitch = smoothdata(explorer.pitch,'SmoothingFactor',0.017);
+  explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
 end 
  
 

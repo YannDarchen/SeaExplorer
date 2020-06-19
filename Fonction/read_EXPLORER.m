@@ -99,8 +99,8 @@ end
 %% SeaExplorer caracteristics 
  
 explorer.M = 61.7; % Mass in kg 
-explorer.V0 = 0.05950; %Volume 
-explorer.alpha = 3*10^-10; %compressibility %Pa^-1 
+explorer.V0 = 0.0599; %Volume 
+explorer.alpha = 4*10^-10; %compressibility %Pa^-1 
 explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique  
 explorer.T0=20; % température 
 explorer.a=3; % angle d'attaque degrés  
@@ -109,16 +109,22 @@ explorer.Cd=0.1; % coefficient de trainée
 
 
 %%% Acceleration
-explorer.W_glider_acc = zeros(1,explorer.size);
-    for k=1:explorer.size-5
-    explorer.W_glider_acc(k) = (explorer.W_glider_filter(k)-explorer.W_glider_filter(k+5))/(explorer.time(k+5)-explorer.time(k));
-    end
-    for k=explorer.size-5:explorer.size
-       explorer.W_glider_acc(k)=NaN; 
-    end
-   explorer.W_glider_acc=fillmissing(explorer.W_glider_acc,'previous');
+W_glider_lisse = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.02);
+%explorer.W_glider_acc = zeros(1,explorer.size);
+%     for k=1:explorer.size-5
+%     explorer.W_glider_acc(k) = (explorer.W_glider_filter(k)-explorer.W_glider_filter(k+5))/(explorer.time(k+5)-explorer.time(k));
+%     
+%     end
+explorer.W_glider_acc = diff(W_glider_lisse)'./(diff(explorer.time)*Const.d2s);
+%     for k=explorer.size-5:explorer.size
+%        explorer.W_glider_acc(k)=NaN; 
+%     end
+  % explorer.W_glider_acc=fillmissing(explorer.W_glider_acc,'previous');
    
    
- 
+   explorer.W_glider_filter = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.02);
+ explorer.pitch_filter = smoothdata(explorer.pitch_filter,'SmoothingFactor',0.017);
+  explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
+
 end
 

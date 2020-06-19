@@ -49,9 +49,9 @@ data.tableau(:,19)=fillmissing(data.tableau(:,19),'previous');
 
 %%% Choose what dives you want
 
-explorer.first_dive = 1; %default is 1 
-explorer.last_dive = data.tableau(end,1); %default is last 
-%explorer.last_dive = 40;
+explorer.first_dive = 50; %default is 1 
+%explorer.last_dive = data.tableau(end,1); %default is last 
+explorer.last_dive = 140;
 explorer.first=explorer.first_dive; % in case you need to change this value 
 explorer.last=explorer.last_dive;
 
@@ -68,15 +68,16 @@ Display_3D_trip = no; Animation_3D = no; %be careful animation can be very long 
 Temperature_Salinity_Profiles = no;
 
 %For vertical velocity 
-vertical_velocities = no; % always yes in order to calculate vertical velocities
-W_glider_W_Model = no;  attack_angle_bydive = no; attack_angle_all = no;
+vertical_velocities = yes; % always yes in order to calculate vertical velocities
+W_glider_W_Model = yes;  attack_angle_bydive = no; attack_angle_all = no;
 Parameters_evolution = no; Parameters_evolution_bydive =no;
-water_velocity_descent_bydive = no; hist_desc = no;
+water_velocity_descent_bydive = yes; hist_desc = yes;
 water_velocity_ascent_by_dive=no; 
 water_velocity_descent_all = no;
 water_velocity_ascent_all = no; hist_asc=no; sbplot = no;
 sub_asc_desc = no;
 water_velocity_all_bydive = no;
+water_velocity_diving = no;
 
 
 %Constant
@@ -426,31 +427,55 @@ if vertical_velocities == 1
      time_all=[];
      Tri=[];
      tab_att=[];
+     
+      explorer3_bydive=explorer_bydive;
+       explorer3_bydive.W_glider_acc = explorer3_bydive.W_glider_acc*explorer_all.M;
+       ign_acc = explorer3_bydive.W_glider_acc > 0.007 | explorer3_bydive.W_glider_acc < -0.007;
+       explorer3_bydive.pressure(ign_acc)=NaN;
+       explorer3_bydive.dens(ign_acc)=NaN;
+       explorer3_bydive.pitch_filter(ign_acc)=NaN;
+       explorer3_bydive.oil(ign_acc)=NaN;
+       explorer3_bydive.W_glider_filter(ign_acc)=NaN;
+       explorer3_bydive.temp(ign_acc)=NaN;
+       explorer3_bydive.time(ign_acc)=NaN;
+       explorer3_bydive.s(ign_acc)=NaN;
+      
     for k=1:explorer.last_dive-explorer.first_dive+1
     
+       
+        
         global pres dens pitch oil_vol Wglider temp mg
-        pres=explorer_bydive.pressure(:,k);
-        dens=explorer_bydive.dens(:,k);
-        pitch=explorer_bydive.pitch_filter(:,k);
-        oil_vol=explorer_bydive.oil(:,k);
-        Wglider=explorer_bydive.W_glider_filter(:,k);
-        temp=explorer_bydive.temp(:,k);
+        pres=explorer3_bydive.pressure(:,k);
+        dens=explorer3_bydive.dens(:,k);
+        pitch=explorer3_bydive.pitch_filter(:,k);
+        oil_vol=explorer3_bydive.oil(:,k);
+        Wglider=explorer3_bydive.W_glider_filter(:,k)';
+        temp=explorer3_bydive.temp(:,k);
         mg=explorer_all.M;
-    %     aw=3.7;
-    %     ah=2.4;
-    %     Cd1w = 0.78;
-    %     Cd1h = 2.1;
-    %     alphat = 7.05e-5;
-        param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
-        options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
-        [x_bydive] = fminsearch('cost_bydive',param0,options);
-        [W_model,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x_bydive(1),x_bydive(2),x_bydive(3),mg);
+       aw=3.7;%initial
+       Cd1w = 0.78;%initial
+       
+       param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
+       options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
+       [x_bydive] = fminsearch('cost',param0,options);
+          
+       global V0 eps Cd
+        V0=x_bydive(1);
+        eps=x_bydive(2);
+        Cd=x_bydive(3);
+        param0=[aw,Cd1w];
+        [x_bydive2] = fminsearch('cost_wings',param0,options); 
+       
+        x_bydive1=[x_bydive x_bydive2];
+          
+        %[W_model3,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x_bydive(1),x_bydive(2),x_bydive(3),mg);
+         [W_model3,att_deg] = flight_model2(pres,dens,pitch,oil_vol,temp,x_bydive(1),x_bydive(2),x_bydive(3),mg,x_bydive2(1),x_bydive2(2));
          %W_model = fillmissing(W_model,'next');
          
          %[W_model] = flight_model(pres,dens,pitch,oil_vol,temp,param0(1),param0(2),param0(3),mg);
-         Tri = [Tri x_bydive'];
-         W_model_all= [W_model_all W_model'];
-         W_glider_all = [W_glider_all explorer_bydive.W_glider_filter(:,k)'];
+         Tri = [Tri x_bydive1'];
+         W_model_all= [W_model_all W_model3'];
+         W_glider_all = [W_glider_all explorer3_bydive.W_glider_filter(:,k)'];
          time_all = [time_all explorer_bydive.time(:,k)'];
          tab_att= [tab_att att_deg];
     
@@ -472,7 +497,11 @@ if attack_angle_bydive == 1
 
 end
 
-  
+%   W_glider_lisse = smoothdata(explorer_all.W_glider_filter,'SmoothingFactor',0.02);
+%   Pitch_lisse = smoothdata(explorer_all.pitch_filter','SmoothingFactor',0.017);
+%   Temp_lisse = smoothdata(explorer_all.temp,'SmoothingFactor',0.02);
+
+
         global pres dens pitch oil_vol Wglider temp mg
         pres=explorer_all.pressure;
         dens=explorer_all.dens;
@@ -481,20 +510,27 @@ end
         Wglider=explorer_all.W_glider_filter;
         temp=explorer_all.temp;
         mg=explorer_all.M;
-    %     aw=3.7;
+        aw=3.7;
     %     ah=2.4;
-    %     Cd1w = 0.78;
+        Cd1w = 0.78;
     %     Cd1h = 2.1;
     %     alphat = 7.05e-5;
         param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
         options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
-        [x_all,fval,exitflag,output] = fminsearch('cost',param0,options);
+        [x_all] = fminsearch('cost',param0,options);
         %[W_model] = flight_model(pres,dens,pitch,oil_vol,temp,x(1),x(2),x(3),mg);
          %W_model = fillmissing(W_model,'next');
-         
+         global V0 eps Cd
+         V0=x_all(1);
+         eps=x_all(2);
+         Cd=x_all(3);
+         param0=[aw,Cd1w];
+         [x_all2] = fminsearch('cost_wings',param0,options);
          %[W_model] = flight_model(pres,dens,pitch,oil_vol,temp,param0(1),param0(2),param0(3),mg);
-         [W_model,att_deg] = flight_model(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg);
-    
+         [W_model,att_deg] = flight_model2(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg,x_all2(1),x_all2(2));
+
+         
+%%% Opt on diving 
 sz=length(explorer_all.pressure);
 tab=zeros(sz,7);
 tab(:,1)=explorer_all.pressure;
@@ -505,8 +541,14 @@ tab(:,5)=explorer_all.W_glider_filter';
 tab(:,6)=explorer_all.temp;
 tab(:,7)=explorer_all.time;
 
-ign = tab(:,1) < 100 | tab(:,1) > 500;
+
+ign = tab(:,3) > 0;
 tab(ign,:)=[];
+Mean_glider= mean(tab(:,5));
+ign1=tab(:,5) > Mean_glider +0.05;
+tab(ign1,:)=[];
+ign2=tab(:,1) > 500 | tab(:,1) < 100;
+tab(ign2,:)=[];
 
      global pres dens pitch oil_vol Wglider temp mg
         pres=tab(:,1);
@@ -516,13 +558,17 @@ tab(ign,:)=[];
         Wglider=tab(:,5)';
         temp=tab(:,6);
         mg=explorer_all.M;
-
+%         aw = 3.7;
+%         Cd1w = 0.78;
+     %  param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd,aw,Cd1w];
         param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
         options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
+        %[test] = fminsearch('cost2',param0,options);
         [test] = fminsearch('cost',param0,options);
 
-      [W_model_test] = flight_model(pres,dens,pitch,oil_vol,temp,test(1),test(2),test(3),mg);
-   
+     
+% [W_model_diving] = flight_model2(pres,dens,pitch,oil_vol,temp,test(1),test(2),test(3),mg,test(4),test(5));
+      [W_model_diving,att_deg_diving,U,att,Fg,Fb] = flight_model(pres,dens,pitch,oil_vol,temp,test(1),test(2),test(3),mg);
  
 %     %Remove spikes
 %     ind = find(W_model<-0.3);
@@ -555,12 +601,13 @@ if W_glider_W_Model == 1
   title('Vitesses verticales du glider by dive')
   hold on 
   %plot(W_model_all,'LineWidth',1.5)
- plot(time_all,W_model_all,'LineWidth',1.5)
-  datetick('x',0,'keepticks')
+  plot(time_all,W_model_all,'LineWidth',1.5)
+ % datetick('x',0,'keepticks')
   legend('W\_glider','W\_model')
   pause(1)
  
   figure('Name','Wglider and Wmodel all','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38])
+ % plot(explorer_all.time, explorer_all.W_glider_filter,'LineWidth',1.5)
   plot(explorer_all.time, explorer_all.W_glider_filter,'LineWidth',1.5)
   title('Vitesses verticales du glider all')
   hold on 
@@ -572,7 +619,7 @@ if W_glider_W_Model == 1
   plot(tab(:,7), tab(:,5)','LineWidth',1.5)
   title('Vitesses verticales du glider all')
   hold on 
-  plot(tab(:,7),W_model_test,'LineWidth',1.5)
+  plot(tab(:,7),W_model_diving,'LineWidth',1.5)
   datetick('x',0,'keepticks')
   legend('W\_glider','W\_model')
 end 
@@ -666,53 +713,33 @@ tableau_ww1=[];
 for k=1:explorer.last_dive-explorer.first_dive+1 
       
    global pres dens pitch oil_vol Wglider temp mg
-  pres=explorer_bydive.pressure(:,k);
-  dens=explorer_bydive.dens(:,k);
-  pitch=explorer_bydive.pitch_filter(:,k);
-  oil_vol=explorer_bydive.oil(:,k);
-  Wglider=explorer_bydive.W_glider_filter(:,k);
-  temp=explorer_bydive.temp(:,k);
+  pres=explorer3_bydive.pressure(:,k);
+  dens=explorer3_bydive.dens(:,k);
+  pitch=explorer3_bydive.pitch_filter(:,k);
+  oil_vol=explorer3_bydive.oil(:,k);
+  Wglider=explorer3_bydive.W_glider_filter(:,k)';%prime avec flightmodel2
+  temp=explorer3_bydive.temp(:,k);
   mg=explorer_all.M;
 
-   [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,Tri(1,k),Tri(2,k),Tri(3,k),mg);
-    W_model = fillmissing(W_model,'previous');
+  % [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,Tri(1,k),Tri(2,k),Tri(3,k),mg);
+   [W_model] = flight_model2(pres,dens,pitch,oil_vol,temp,Tri(1,k),Tri(2,k),Tri(3,k),mg,Tri(4,k),Tri(5,k));
+    %W_model = fillmissing(W_model,'previous');
  
-      explorer2_bydive.temp=explorer_bydive.temp(:,k);
-      explorer2_bydive.s=explorer_bydive.s(:,k);
-      explorer2_bydive.dens=explorer_bydive.dens(:,k);
-      explorer2_bydive.W_glider_filter=explorer_bydive.W_glider_filter(:,k);
-       explorer2_bydive.time=explorer_bydive.time(:,k);
-       explorer2_bydive.pressure=explorer_bydive.pressure(:,k);
-       
-       %descent
-%        to_ign=[];
-%         max_ind = find(explorer2_bydive.pressure == max(explorer2_bydive.pressure));
-%         i=1;
-%         while explorer2_bydive.pressure(i) ~= max(explorer2_bydive.pressure)
-%           if  not(explorer2_bydive.pressure(i)<explorer2_bydive.pressure(i+1)) % delete variations
-%             to_ign = [to_ign i+1];
-%           end
-%           i=i+1;
-%         end
-%         to_ign = [to_ign max_ind:length(explorer2_bydive.pressure)]; % taking only descent 
-%         explorer2_bydive.p_sorted = explorer2_bydive.pressure;
-%         explorer2_bydive.p_sorted(to_ign)=[];
-%         explorer2_bydive.temp(to_ign)=[];
-%         explorer2_bydive.s(to_ign)=[];
-%         explorer2_bydive.dens(to_ign)=[];
-%         explorer2_bydive.W_glider_filter(to_ign)=[];
-%         W_model(to_ign)=[];
-%         explorer2_bydive.time(to_ign)=[];
-%     
-%  
+      explorer2_bydive.temp=explorer3_bydive.temp(:,k);
+      explorer2_bydive.dens=explorer3_bydive.dens(:,k);
+      explorer2_bydive.W_glider_filter=explorer3_bydive.W_glider_filter(:,k);
+       explorer2_bydive.time=explorer3_bydive.time(:,k);
+       explorer2_bydive.pressure=explorer3_bydive.pressure(:,k);
+       explorer2_bydive.s=explorer3_bydive.s(:,k);
 
- max_ind = find(explorer2_bydive.pressure == max(explorer2_bydive.pressure));
+%Select descent
+ max_ind = find(explorer_bydive.pressure(:,k) == max(explorer_bydive.pressure(:,k)));
  to_ign = [max_ind:length(explorer2_bydive.pressure)];
  explorer2_bydive.p_sorted = explorer2_bydive.pressure;
  explorer2_bydive.p_sorted(to_ign)=[];
  explorer2_bydive.temp(to_ign)=[];
- explorer2_bydive.s(to_ign)=[];
  explorer2_bydive.dens(to_ign)=[];
+ explorer2_bydive.s(to_ign)=[];
  explorer2_bydive.W_glider_filter(to_ign)=[];
  W_model(to_ign)=[];
  explorer2_bydive.time(to_ign)=[];
@@ -735,21 +762,16 @@ for k=1:explorer.last_dive-explorer.first_dive+1
          end
         end
         F(to_igno,:)=[];
-  
-    
-%     explorer2_bydive.p_sorted(to_igno)=[];
-%     explorer2_bydive.temp(to_igno)=[];
-%     explorer2_bydive.s(to_igno)=[];
-%     explorer2_bydive.dens(to_igno)=[];
-%     explorer2_bydive.W_glider_filter(to_igno)=[];
-%     W_model(to_igno)=[];
-%     explorer2_bydive.time(to_igno)=[];
+
+ ign_nan = isnan(F(:,1));
+ F(ign_nan,:)=[];
+ 
+ 
     
     Ww=F(:,5)-F(:,6);
   
-  
     
-    pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
+    pi=[0:1:max(explorer_all.pressure)];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
     ti=interp1(F(:,1),F(:,2),pi); 
     si=interp1(F(:,1),F(:,3),pi);
     di=interp1(F(:,1),F(:,4),pi);
@@ -768,10 +790,6 @@ for k=1:explorer.last_dive-explorer.first_dive+1
     tableau_w_model=[tableau_w_model wm'];
     tableau_ww1=[tableau_ww1 ww'];
     
-%     figure()
-%     plot(explorer.time,explorer.W_glider)
-%     hold on 
-%     plot(explorer.time,W_model)
     
 end
 
@@ -842,13 +860,18 @@ tableau_ww2=[];
 for j= explorer.first_dive:explorer.last_dive 
        explorer = by_dive(tableau,j,explorer,Const);%data by dive
    
+W_glider_lisse = smoothdata(explorer.W_glider,'SmoothingFactor',0.02);
+Pitch_lisse = smoothdata(explorer.pitch,'SmoothingFactor',0.03);
+Temp_lisse = smoothdata(explorer.temp,'SmoothingFactor',0.02);
+
+       
    global pres dens pitch oil_vol Wglider temp mg
    pres=explorer.pressure;
    dens=explorer.dens;
-   pitch=explorer.pitch;
+   pitch=Pitch_lisse;
    oil_vol=explorer.oil;
-   Wglider=explorer.W_glider;
-   temp=explorer.temp;
+   Wglider=W_glider_lisse;
+   temp=Temp_lisse;
    mg=explorer_all.M;
 
    [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg);
@@ -860,7 +883,7 @@ for j= explorer.first_dive:explorer.last_dive
  explorer.temp(to_ign)=[];
  explorer.s(to_ign)=[];
  explorer.dens(to_ign)=[];
- explorer.W_glider(to_ign)=[];
+ W_glider_lisse(to_ign)=[];
  W_model(to_ign)=[];
  explorer.time(to_ign)=[];
  
@@ -869,7 +892,7 @@ for j= explorer.first_dive:explorer.last_dive
  E(:,2)= explorer.temp;
  E(:,3)= explorer.s;
  E(:,4)= explorer.dens;
- E(:,5)= explorer.W_glider';
+ E(:,5)= W_glider_lisse';
  E(:,6)= W_model;
  E(:,7)= explorer.time;
  
@@ -998,6 +1021,141 @@ if hist_desc == 1
     figure('Name','Velocity','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38]);
     histogram(tableau_ww2,100)
     title('velocities')
+    xlabel('velocities m/s')
+    %xlim([-4 5])
+
+end
+end
+%-----------------------------------------------------------------------%
+if water_velocity_diving == 1 
+
+
+  
+    pause(1.5)
+tableau_ti=[];
+tableau_si=[];
+tableau_di=[];
+tableau_w_glider=[];
+tableau_w_model=[];
+tableau_ww6=[];
+for j= explorer.first_dive:explorer.last_dive 
+       explorer = by_dive(tableau,j,explorer,Const);%data by dive
+ %%% Opt on diving 
+sz=length(explorer.pressure);
+tab1=zeros(sz,7);
+tab1(:,1)=explorer.pressure;
+tab1(:,2)=explorer.dens;
+tab1(:,3)=explorer.pitch;
+tab1(:,4)=explorer.oil;
+tab1(:,5)=explorer.W_glider;
+tab1(:,6)=explorer.temp;
+tab1(:,7)=explorer.time;
+
+
+ign = tab1(:,3) > 0;
+tab1(ign,:)=[];
+Mean_glider= mean(tab1(:,5));
+ign1=tab1(:,5) > Mean_glider +0.05;
+tab1(ign1,:)=[];
+ign2=tab1(:,1) > 500 | tab1(:,1) < 100;
+tab1(ign2,:)=[];
+
+     global pres dens pitch oil_vol Wglider temp mg
+        pres=tab1(:,1);
+        dens=tab1(:,2);
+        pitch=tab1(:,3);
+        oil_vol=tab1(:,4);
+        Wglider=tab1(:,5)';
+        temp=tab1(:,6);
+        mg=explorer_all.M;
+
+   [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,test(1),test(2),test(3),mg);
+
+
+ G=sortrows(tab1,1);
+ 
+   to_igno = [];
+        for i=1:length(G)-1
+         if  G(i,1) == G(i+1,1) % delete doublon
+           to_igno = [to_igno i+1];
+         end
+        end
+        G(to_igno,:)=[];
+  
+    
+    Ww_test=G(:,5)-W_model;
+  
+  
+    
+    pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
+    ti=interp1(G(:,1),G(:,2),pi); 
+    si=interp1(G(:,1),G(:,3),pi);
+    di=interp1(G(:,1),G(:,4),pi);
+    wg=interp1(G(:,1),G(:,5),pi);
+    wm=interp1(G(:,1),G(:,6),pi);
+    ww_test=interp1(G(:,1),Ww_test,pi);
+    
+         %Filter on ww 
+    ind = find(abs(ww_test) > 0.03);
+    ww_test(ind)=NaN;
+   
+    tableau_ti=[tableau_ti ti'];
+    tableau_si=[tableau_si si'];
+    tableau_di=[tableau_di di'];
+    tableau_w_glider=[tableau_w_glider wg'];
+    tableau_w_model=[tableau_w_model wm'];
+    tableau_ww6=[tableau_ww6 ww_test'];
+    
+
+end
+figure('Name','Water vertical velocity diving','NumberTitle','off','Units','normalized','Position',[0.66,0.5,0.33,0.42]);
+
+if sbplot == 1
+
+    subplot(2,1,1)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ti);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'       (°C)','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Température')
+
+   
+    subplot(2,1,2)
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww2);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    H=colorbar;
+    ylabel(H,'          ','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Ww')
+else 
+    pcolor([explorer.first_dive:explorer.last_dive],-pi,tableau_ww6);   % utilisation de la fonction pcolor + "shading interp"
+    shading interp
+    colormap(blue_red_cmap)
+    H=colorbar;
+    caxis([-0.025 0.025])
+    ylabel(H,'          ','FontSize',12,'Rotation',0);
+    grid on
+    ax = gca;
+    ax.Layer='Top';
+    xlabel('Numéro de plongée')
+    ylabel('- Pression (dbar)')
+    title('Ww\_diving')
+    
+end
+if hist_desc == 1 
+    pause(1.5)
+    figure('Name','Velocity','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38]);
+    histogram(tableau_ww6,100)
+    title('velocities diving')
     xlabel('velocities m/s')
     %xlim([-4 5])
 
@@ -1475,14 +1633,6 @@ end
 % ------------------------------------- %
 
 
-figure()
-yyaxis left
-plot(explorer_all.time,explorer_all.M.*explorer_all.W_glider_acc,'-+')
-hold on 
-%yyaxis right
-%plot(explorer_all.time,explorer_all.pitch_filter,'-+')
-title('M*acceleration')
-legend('acceleration','pitch')
 
 
 

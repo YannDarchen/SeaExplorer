@@ -125,9 +125,19 @@ W_glider = NaN(explorer.size,min(size(explorer.lat)));
        [TF] = isoutlier(negatif,'percentiles',[3 100]);
        explorer.W_glider_filter(TF,k)=NaN;
        explorer.W_glider_filter = fillmissing(explorer.W_glider_filter,'next');
-    end
-   
+   end
+%    
+%     
+ explorer.W_glider_filter = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.02);
+ explorer.pitch_filter = smoothdata(explorer.pitch_filter,'SmoothingFactor',0.017);
+  explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
+
+  sz=size(explorer.pressure);
+  explorer.W_glider_acc = NaN(sz(1),sz(2));
+ % explorer.W_glider_acc = diff(explorer.W_glider_filter)./(diff(explorer.time)*Const.d2s);
+ explorer.W_glider_acc(1:end-1,:) = diff(explorer.W_glider_filter)./(diff(explorer.time)*Const.d2s);
 
 end 
+
  
 
