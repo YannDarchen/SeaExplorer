@@ -98,8 +98,8 @@ end
 
 %% SeaExplorer caracteristics 
  
-explorer.M = 61.7; % Mass in kg 
-explorer.V0 = 0.05995; %Volume 
+explorer.M = 61.223; % Mass in kg 
+explorer.V0 = 0.0589; %Volume 
 explorer.alpha = 4*10^-10; %compressibility %Pa^-1 
 explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique  
 explorer.T0=20; % température 

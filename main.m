@@ -48,10 +48,20 @@ data.tableau(:,1)=fillmissing(data.tableau(:,1),'previous');
 data.tableau(:,19)=fillmissing(data.tableau(:,19),'previous');
 
 %%% Choose what dives you want
-
-explorer.first_dive = 120; %default is 1 
+Quintuplet_desc_1 =[];
+Quintuplet_desc_2 =[];
+Quintuplet_mont_1 =[];
+Quintuplet_mont_2 =[];
+Precision_d1=[];
+Precision_d2=[];
+Precision_m1=[];
+Precision_m2=[];
+Fb_desc_1=[];
+for fn=1:2:93
+  
+explorer.first_dive =90+fn; %default is 1 
 %explorer.last_dive = data.tableau(end,1); %default is last 
-explorer.last_dive = 131;
+explorer.last_dive =101+fn;
 explorer.first=explorer.first_dive; % in case you need to change this value 
 explorer.last=explorer.last_dive;
 
@@ -71,13 +81,17 @@ Temperature_Salinity_Profiles = no;
 vertical_velocities = yes; % always yes in order to calculate vertical velocities
 
 %%% les optimisations 
-opt_descente_1 = yes; 
-opt_all = yes;
+opt_descente_1 = yes;
+opt_descente_2 = yes;
+opt_montee_1 = yes;
+opt_montee_2 = yes;
+opt_all = no;
 opt_bydive = no;
 opt_diving = no;
 
 
-W_glider_W_Model = yes;  attack_angle_bydive = no; attack_angle_all = no;
+
+W_glider_W_Model = no;  attack_angle_bydive = no; attack_angle_all = no;
 Parameters_evolution = no; Parameters_evolution_bydive =no;
 water_velocity_descent_bydive = no; hist_desc = no;
 water_velocity_ascent_by_dive=no; 
@@ -202,12 +216,21 @@ if Depth_oil_pitch == 1
     plot(explorer_all.time,explorer_all.oil,'-+','LineWidth',1)
     ylabel('profondeur(m), huile (ml)')
     yyaxis right
-    plot(explorer_all.time,explorer_all.pitch_filter,'-+','LineWidth',1)
+    plot(explorer_all.time,explorer_all.pitch_filter*(pi/180),'-+','LineWidth',1)
+    
+    figure('Name','depth oil volume and pitch','NumberTitle','off','Units','normalized','Position',[0.66,0.5,0.33,0.42]);
+    yyaxis left
+    plot(explorer_all.dive,-explorer_all.depth,'LineWidth',1)
+    hold on 
+    plot(explorer_all.dive,explorer_all.oil,'or','LineWidth',1)
+    ylabel('profondeur(m), huile (ml)')
+    %yyaxis right
+    %plot(explorer_all.dive,explorer_all.pitch_filter*(pi/180),'-+','LineWidth',1)
     
     hold off
     title('Profondeur, huile, pitch')
     ylabel('pitch (°)')
-    datetick('x',0,'keepticks')
+    %datetick('x',0,'keepticks')
     legend('profondeur','volume huile','pitch')
 
     figure()
@@ -642,7 +665,7 @@ tab_descent_1.tab(ign1,:)=[];
 
 %%%Optimisation %%%%%% 
 
-global pres dens pitch oil_vol Wglider temp mg
+global pres dens pitch oil_vol Wglider temp mg 
 pres=tab_descent_1.tab(:,1);
 dens=tab_descent_1.tab(:,2);
 pitch=tab_descent_1.tab(:,3);
@@ -650,6 +673,7 @@ oil_vol=tab_descent_1.tab(:,4);
 Wglider=tab_descent_1.tab(:,5)';
 temp=tab_descent_1.tab(:,6);
 mg=explorer_all.M;
+
 
 %%%Première optimisation
 aw=3.7;
@@ -666,15 +690,265 @@ Cd=x_desc_1(3);
 param0=[aw,Cd1w];
 [x_desc_11,precision_descent_11] = fminsearch('cost_wings',param0,options);
 
-[W_model_desc_1] = flight_model2(pres,dens,pitch,oil_vol,temp,x_desc_1(1),x_desc_1(2),x_desc_1(3),mg,x_desc_11(1),x_desc_11(2));
+Precision_d1=[Precision_d1 precision_descent_11];
+Quintuplet_desc_1 =[Quintuplet_desc_1 [x_desc_1 x_desc_11]'];
+[W_model_desc_1,att_deg,U,att,Fg,Fb_d1,Fl,Fd] = flight_model2(pres,dens,pitch,oil_vol,temp,x_desc_1(1),x_desc_1(2),x_desc_1(3),mg,x_desc_11(1),x_desc_11(2));
+ind=Fb_d1 ==0;
+Fb_d1(ind)=[];
+Fbd1=nanmean(Fb_d1);
+Fb_desc_1=[Fb_desc_1 Fbd1];
 
+Ww_desc_1 = tab_descent_1.tab(:,5)-W_model_desc_1;
+ end
+ 
+ %%%%% Optimisation sur 2ème descente  %%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%---------------------------------------------------------------------%
+ 
+ if opt_descente_2 == 1 
+    
+     %%%Préparation des données %%%%%% 
+ 
+   tab_descent_2.tab=[];
+   tab_descent_2.pressure=[];  
+   tab_descent_2.dens=[];
+   tab_descent_2.pitch=[];
+   tab_descent_2.oil=[];
+   tab_descent_2.w_glider=[];
+   tab_descent_2.temp=[];
+   tab_descent_2.time=[];
+   tab_descent_2.acc=[];
+ 
+     for k=2:2:explorer.last_dive-explorer.first_dive+1
+         
+       
+        tab_descent_2.pressure=[tab_descent_2.pressure explorer_bydive.pressure(:,k)']; % On les remplit avec montée et descente une plongée sur deux 
+        tab_descent_2.dens=[tab_descent_2.dens explorer_bydive.dens(:,k)'];
+        tab_descent_2.pitch=[tab_descent_2.pitch explorer_bydive.pitch_filter(:,k)'];
+        tab_descent_2.oil=[tab_descent_2.oil explorer_bydive.oil(:,k)'];
+        tab_descent_2.w_glider=[tab_descent_2.w_glider explorer_bydive.W_glider_filter(:,k)'];
+        tab_descent_2.temp=[tab_descent_2.temp explorer_bydive.temp(:,k)'];
+        tab_descent_2.time=[tab_descent_2.time explorer_bydive.time(:,k)'];
+        tab_descent_2.acc=[tab_descent_2.acc (explorer_bydive.W_glider_acc(:,k).*explorer_all.M)'];
+
+
+     end
+     
+tab_descent_2.tab(:,1)=tab_descent_2.pressure; %Création du tableau
+tab_descent_2.tab(:,2)=tab_descent_2.dens;
+tab_descent_2.tab(:,3)=tab_descent_2.pitch;
+tab_descent_2.tab(:,4)=tab_descent_2.oil;
+tab_descent_2.tab(:,5)=tab_descent_2.w_glider;
+tab_descent_2.tab(:,6)=tab_descent_2.temp;
+tab_descent_2.tab(:,7)=tab_descent_2.time;
+tab_descent_2.tab(:,8)=tab_descent_2.acc;
+
+ign = tab_descent_2.tab(:,4) > 0 | tab_descent_2.tab(:,3) > 0 ; %ignorer les montées donc pitch > 0
+tab_descent_2.tab(ign,:)=[];
+
+ign1 = abs(tab_descent_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
+tab_descent_2.tab(ign1,:)=[];
+
+%%%Optimisation %%%%%% 
+
+global pres dens pitch oil_vol Wglider temp mg
+pres=tab_descent_2.tab(:,1);
+dens=tab_descent_2.tab(:,2);
+pitch=tab_descent_2.tab(:,3);
+oil_vol=tab_descent_2.tab(:,4);
+Wglider=tab_descent_2.tab(:,5)';
+temp=tab_descent_2.tab(:,6);
+mg=explorer_all.M;
+
+%%%Première optimisation
+aw=3.7;
+Cd1w = 0.78;
+param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
+options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
+[x_desc_2,precision_descent_2] = fminsearch('cost',param0,options); 
+
+%%%Deuxième optimisation
+global V0 eps Cd
+V0=x_desc_2(1);
+eps=x_desc_2(2);
+Cd=x_desc_2(3);
+param0=[aw,Cd1w];
+[x_desc_22,precision_descent_22] = fminsearch('cost_wings',param0,options);
+
+Precision_d2=[Precision_d2 precision_descent_22];
+Quintuplet_desc_2 =[Quintuplet_desc_2 [x_desc_2 x_desc_22]'];
+[W_model_desc_2] = flight_model2(pres,dens,pitch,oil_vol,temp,x_desc_2(1),x_desc_2(2),x_desc_2(3),mg,x_desc_22(1),x_desc_22(2));
+Ww_desc_2 = tab_descent_2.tab(:,5)-W_model_desc_2;
  end
  
  
+
+
+  %%%%% Optimisation sur 1ère montée  %%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%---------------------------------------------------------------------%
+ 
+ if opt_montee_1 == 1 
+    
+     %%%Préparation des données %%%%%% 
+ 
+   tab_montee_1.tab=[];
+   tab_montee_1.pressure=[];  
+   tab_montee_1.dens=[];
+   tab_montee_1.pitch=[];
+   tab_montee_1.oil=[];
+   tab_montee_1.w_glider=[];
+   tab_montee_1.temp=[];
+   tab_montee_1.time=[];
+   tab_montee_1.acc=[];
+ 
+     for k=1:2:explorer.last_dive-explorer.first_dive+1
+         
+       
+        tab_montee_1.pressure=[tab_montee_1.pressure explorer_bydive.pressure(:,k)']; % On les remplit avec montée et descente une plongée sur deux 
+        tab_montee_1.dens=[tab_montee_1.dens explorer_bydive.dens(:,k)'];
+        tab_montee_1.pitch=[tab_montee_1.pitch explorer_bydive.pitch_filter(:,k)'];
+        tab_montee_1.oil=[tab_montee_1.oil explorer_bydive.oil(:,k)'];
+        tab_montee_1.w_glider=[tab_montee_1.w_glider explorer_bydive.W_glider_filter(:,k)'];
+        tab_montee_1.temp=[tab_montee_1.temp explorer_bydive.temp(:,k)'];
+        tab_montee_1.time=[tab_montee_1.time explorer_bydive.time(:,k)'];
+        tab_montee_1.acc=[tab_montee_1.acc (explorer_bydive.W_glider_acc(:,k).*explorer_all.M)'];
+
+
+     end
+     
+tab_montee_1.tab(:,1)=tab_montee_1.pressure; %Création du tableau
+tab_montee_1.tab(:,2)=tab_montee_1.dens;
+tab_montee_1.tab(:,3)=tab_montee_1.pitch;
+tab_montee_1.tab(:,4)=tab_montee_1.oil;
+tab_montee_1.tab(:,5)=tab_montee_1.w_glider;
+tab_montee_1.tab(:,6)=tab_montee_1.temp;
+tab_montee_1.tab(:,7)=tab_montee_1.time;
+tab_montee_1.tab(:,8)=tab_montee_1.acc;
+
+ign = tab_montee_1.tab(:,4) < 0 | tab_montee_1.tab(:,3) < 0 ; %ignorer les descentes donc pitch > 0
+tab_montee_1.tab(ign,:)=[];
+
+ign1 = abs(tab_montee_1.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
+tab_montee_1.tab(ign1,:)=[];
+
+%%%Optimisation %%%%%% 
+
+global pres dens pitch oil_vol Wglider temp mg
+pres=tab_montee_1.tab(:,1);
+dens=tab_montee_1.tab(:,2);
+pitch=tab_montee_1.tab(:,3);
+oil_vol=tab_montee_1.tab(:,4);
+Wglider=tab_montee_1.tab(:,5)';
+temp=tab_montee_1.tab(:,6);
+mg=explorer_all.M;
+
+%%%Première optimisation
+aw=3.7;
+Cd1w = 0.78;
+param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
+options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
+[x_mont_1,precision_montee_1] = fminsearch('cost',param0,options); 
+
+%%%Deuxième optimisation
+global V0 eps Cd
+V0=x_mont_1(1);
+eps=x_mont_1(2);
+Cd=x_mont_1(3);
+param0=[aw,Cd1w];
+[x_mont_11,precision_montee_11] = fminsearch('cost_wings',param0,options);
+
+Precision_m1=[Precision_m1 precision_montee_11];
+Quintuplet_mont_1 =[Quintuplet_mont_1 [x_mont_1 x_mont_11]'];
+[W_model_mont_1,att_deg,U,att,Fg,Fb_m1,Fl,Fd] = flight_model2(pres,dens,pitch,oil_vol,temp,x_mont_1(1),x_mont_1(2),x_mont_1(3),mg,x_mont_11(1),x_mont_11(2));
+Ww_mont_1 = tab_montee_1.tab(:,5)-W_model_mont_1;
+ end
+
+   %%%%% Optimisation sur 2ème montée  %%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%---------------------------------------------------------------------%
+ 
+ if opt_montee_2 == 1 
+    
+     %%%Préparation des données %%%%%% 
+ 
+   tab_montee_2.tab=[];
+   tab_montee_2.pressure=[];  
+   tab_montee_2.dens=[];
+   tab_montee_2.pitch=[];
+   tab_montee_2.oil=[];
+   tab_montee_2.w_glider=[];
+   tab_montee_2.temp=[];
+   tab_montee_2.time=[];
+   tab_montee_2.acc=[];
+ 
+     for k=2:2:explorer.last_dive-explorer.first_dive+1
+         
+       
+        tab_montee_2.pressure=[tab_montee_2.pressure explorer_bydive.pressure(:,k)']; % On les remplit avec montée et descente une plongée sur deux 
+        tab_montee_2.dens=[tab_montee_2.dens explorer_bydive.dens(:,k)'];
+        tab_montee_2.pitch=[tab_montee_2.pitch explorer_bydive.pitch_filter(:,k)'];
+        tab_montee_2.oil=[tab_montee_2.oil explorer_bydive.oil(:,k)'];
+        tab_montee_2.w_glider=[tab_montee_2.w_glider explorer_bydive.W_glider_filter(:,k)'];
+        tab_montee_2.temp=[tab_montee_2.temp explorer_bydive.temp(:,k)'];
+        tab_montee_2.time=[tab_montee_2.time explorer_bydive.time(:,k)'];
+        tab_montee_2.acc=[tab_montee_2.acc (explorer_bydive.W_glider_acc(:,k).*explorer_all.M)'];
+
+
+     end
+     
+tab_montee_2.tab(:,1)=tab_montee_2.pressure; %Création du tableau
+tab_montee_2.tab(:,2)=tab_montee_2.dens;
+tab_montee_2.tab(:,3)=tab_montee_2.pitch;
+tab_montee_2.tab(:,4)=tab_montee_2.oil;
+tab_montee_2.tab(:,5)=tab_montee_2.w_glider;
+tab_montee_2.tab(:,6)=tab_montee_2.temp;
+tab_montee_2.tab(:,7)=tab_montee_2.time;
+tab_montee_2.tab(:,8)=tab_montee_2.acc;
+
+ign = tab_montee_2.tab(:,4) < 0 | tab_montee_2.tab(:,3) < 0 ; %ignorer les descentes donc pitch > 0
+tab_montee_2.tab(ign,:)=[];
+
+ign1 = abs(tab_montee_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
+tab_montee_2.tab(ign1,:)=[];
+
+%%%Optimisation %%%%%% 
+
+global pres dens pitch oil_vol Wglider temp mg
+pres=tab_montee_2.tab(:,1);
+dens=tab_montee_2.tab(:,2);
+pitch=tab_montee_2.tab(:,3);
+oil_vol=tab_montee_2.tab(:,4);
+Wglider=tab_montee_2.tab(:,5)';
+temp=tab_montee_2.tab(:,6);
+mg=explorer_all.M;
+
+%%%Première optimisation
+aw=3.7;
+Cd1w = 0.78;
+param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
+options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
+[x_mont_2,precision_montee_2] = fminsearch('cost',param0,options); 
+
+%%%Deuxième optimisation
+global V0 eps Cd
+V0=x_mont_2(1);
+eps=x_mont_2(2);
+Cd=x_mont_2(3);
+param0=[aw,Cd1w];
+[x_mont_22,precision_montee_22] = fminsearch('cost_wings',param0,options);
+
+Precision_m2=[Precision_m2 precision_montee_22];
+Quintuplet_mont_2 =[Quintuplet_mont_2 [x_mont_2 x_mont_22]'];
+[W_model_mont_2] = flight_model2(pres,dens,pitch,oil_vol,temp,x_mont_2(1),x_mont_2(2),x_mont_2(3),mg,x_mont_22(1),x_mont_22(2));
+
+%histogramme
+Ww_mont_2 = tab_montee_2.tab(:,5)-W_model_mont_2;
+
+
+ end
+
  
  
 end
-
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
 
@@ -719,11 +993,65 @@ if W_glider_W_Model == 1
   if opt_descente_1 ==1
   figure('Name','Wglider and Wmodel descent_1','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38])
   plot(tab_descent_1.tab(:,7),tab_descent_1.tab(:,5)','+','LineWidth',1)
-  title('Vitesses verticales du glider all')
+  title('Vitesses verticales du glider descent\_1')
   hold on 
   plot(tab_descent_1.tab(:,7),W_model_desc_1,'+','LineWidth',1)
-  datetick('x',0,'keepticks')
+  datetick('x',15)
   legend('W\_glider','W\_model')
+  
+  figure()
+  histogram(Ww_desc_1)
+  xlim([-0.02 0.02])
+  ylim([0 200])
+  title('Ww\_desc\_1')
+  end
+  
+  if opt_descente_2 ==1
+  figure('Name','Wglider and Wmodel descent_2','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38])
+  plot(tab_descent_2.tab(:,7),tab_descent_2.tab(:,5)','+','LineWidth',1)
+  title('Vitesses verticales du glider descent\_2')
+  hold on 
+  plot(tab_descent_2.tab(:,7),W_model_desc_2,'+','LineWidth',1)
+  datetick('x',15)
+  legend('W\_glider','W\_model')
+  
+  figure()
+  histogram(Ww_desc_2)
+   xlim([-0.02 0.02])
+  ylim([0 200])
+  title('Ww\_desc\_2')
+  end
+  
+  if opt_montee_1 ==1
+  figure('Name','Wglider and Wmodel montee_1','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38])
+  plot(tab_montee_1.tab(:,7),tab_montee_1.tab(:,5)','+','LineWidth',1)
+  title('Vitesses verticales du glider montee\_1')
+  hold on 
+  plot(tab_montee_1.tab(:,7),W_model_mont_1,'+','LineWidth',1)
+  datetick('x',15)
+  legend('W\_glider','W\_model')
+  
+  figure()
+  histogram(Ww_mont_1)
+   xlim([-0.02 0.02])
+  ylim([0 200])
+  title('Ww\_mont\_1')
+  end
+  
+  if opt_montee_2 ==1
+  figure('Name','Wglider and Wmodel montee_2','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38])
+  plot(tab_montee_2.tab(:,7),tab_montee_2.tab(:,5)','+','LineWidth',1)
+  title('Vitesses verticales du glider montee\_2')
+  hold on 
+  plot(tab_montee_2.tab(:,7),W_model_mont_2,'+','LineWidth',1)
+  datetick('x',15)
+  legend('W\_glider','W\_model')
+  
+  figure()
+  histogram(Ww_mont_2)
+   xlim([-0.02 0.02])
+  ylim([0 200])
+  title('Ww\_mont\_2')
   end
 end 
 
@@ -804,6 +1132,8 @@ end
 
 %% %% ----- Display water vertical velocities ----- %%
 % ------------------------------------- %
+
+
 
 if water_velocity_descent_bydive == 1 
     pause(1.5)

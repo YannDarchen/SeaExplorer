@@ -1,6 +1,6 @@
 function [cost] = cost(param)
 % cost function to minimize mean water vertical velocities
-global pres dens pitch oil_vol Wglider temp mg
+global pres dens pitch oil_vol Wglider temp mg 
 [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,param(1),param(2),param(3),mg);
 
 %% Remove spikes
