@@ -57,11 +57,11 @@ Precision_d2=[];
 Precision_m1=[];
 Precision_m2=[];
 Fb_desc_1=[];
-for fn=1:2:93
+%for fn=1:2:93
   
-explorer.first_dive =90+fn; %default is 1 
+explorer.first_dive =128; %default is 1 
 %explorer.last_dive = data.tableau(end,1); %default is last 
-explorer.last_dive =101+fn;
+explorer.last_dive =139;
 explorer.first=explorer.first_dive; % in case you need to change this value 
 explorer.last=explorer.last_dive;
 
@@ -948,7 +948,7 @@ Ww_mont_2 = tab_montee_2.tab(:,5)-W_model_mont_2;
  
  
 end
-end
+%end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
 
