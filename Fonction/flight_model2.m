@@ -59,7 +59,7 @@ att_deg = att*(180/pi);
 Fg = mg*g;
 
 alphat= 7.05e-5;% thermic compressibility
-Fb = g*(rho).*(Vg*(1-eps*(p*10000)+alphat.*(temp-13.2))+(500+dvbp)/1000000);
+Fb = g*(rho).*(Vg*(1-eps*(p*10000)+alphat.*(temp-13.2))+(dvbp)/1000000);
 %Fb = g*(rho).*(Vg*(1-eps*(p*10000)+alphat.*(temp-13.2))+dvbp/1000000);
 
 % Glider speeds through water

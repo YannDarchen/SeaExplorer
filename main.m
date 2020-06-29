@@ -8,9 +8,11 @@ addpath('Data_Stage');
 addpath('Fonction');
 addpath('SeaWater');
 
-data_name ='BioswotSeaExplorer_Nav&CTD.mat';
+data_name ='BioswotSeaExplorer_NavCTD_26Juin2020';
+%data_name ='BioswotSeaExplorer_Nav&CTD.mat';
 %data_name ='Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat';
 data=load(data_name);
+
 %Select Year
 Year = [2018];
 i_ign= data.tableau(:,2) ~= Year ;
@@ -59,9 +61,9 @@ Precision_m2=[];
 Fb_desc_1=[];
 %for fn=1:2:93
   
-explorer.first_dive =128; %default is 1 
+explorer.first_dive =100; %default is 1 
 %explorer.last_dive = data.tableau(end,1); %default is last 
-explorer.last_dive =139;
+explorer.last_dive =111;
 explorer.first=explorer.first_dive; % in case you need to change this value 
 explorer.last=explorer.last_dive;
 
@@ -78,14 +80,14 @@ Display_3D_trip = no; Animation_3D = no; %be careful animation can be very long 
 Temperature_Salinity_Profiles = no;
 
 %For vertical velocity 
-vertical_velocities = yes; % always yes in order to calculate vertical velocities
+vertical_velocities = no; % always yes in order to calculate vertical velocities
 
 %%% les optimisations 
-opt_descente_1 = yes;
-opt_descente_2 = yes;
-opt_montee_1 = yes;
-opt_montee_2 = yes;
-opt_all = no;
+opt_descente_1 = no;
+opt_descente_2 = no;
+opt_montee_1 = no;
+opt_montee_2 = no;
+opt_all = yes;
 opt_bydive = no;
 opt_diving = no;
 
@@ -236,11 +238,12 @@ if Depth_oil_pitch == 1
     figure()
     yyaxis left
     plot(tableau(:,8),tableau(:,16))
+    ylabel('Roll (°)')
     hold on 
     yyaxis right
     plot(explorer_all.time,explorer_all.pitch_filter,'-+','LineWidth',1)
     title('Roll and pitch')
-    ylabel('Roll (°)')
+    ylabel('Pitch (°)')
     datetick('x',0,'keepticks')
     legend('Roll','pitch')
     
@@ -324,7 +327,7 @@ if Colored_Temperature_Salinity == 1 % only descents
     ax.Layer='Top';
     xlabel('Dive number')
     ylabel('- Pressure (dbar)')
-    title('Temperature\_diving')
+    title('Temperature')
 
     subplot(2,1,2)
     pcolor([explorer.first_dive:explorer.last_dive],-pi,tab_si);   % utilisation de la fonction pcolor + "shading interp"
@@ -389,6 +392,9 @@ if Display_3D_trip == 1
     C = explorer.temp_interp;
     Z(end)=NaN;
     C(end)=NaN;
+%     h = figure;
+%     %axis off
+%     filename = 'trajectoire.gif';
     figure('Name','3D_Trip_Temperature','NumberTitle','off','Units','normalized','Position',[0.33,0.05,0.33,0.38]);
 
     fill3(X,Y,Z,C,'EdgeColor','w','LineWidth',1)
@@ -404,6 +410,16 @@ if Display_3D_trip == 1
         fill3(X(j),Y(j),Z(j),C(j),'EdgeColor','interp','Marker','o','MarkerFaceColor','flat')
         if Animation_3D == 1 
             drawnow
+%             % Capture the plot as an image 
+%           frame = getframe(h); 
+%           im = frame2im(frame); 
+%           [imind,cm] = rgb2ind(im,256); 
+%           % Write to the GIF File 
+%           if i == 2 
+%               imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0.05); 
+%           else 
+%               imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05); 
+%           end 
         end
     end
     hold off
@@ -559,8 +575,8 @@ end
          param0=[aw,Cd1w];
          [x_all2] = fminsearch('cost_wings',param0,options);
          %[W_model] = flight_model(pres,dens,pitch,oil_vol,temp,param0(1),param0(2),param0(3),mg);
-         [W_model,att_deg] = flight_model2(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg,x_all2(1),x_all2(2));
-
+         [W_model_all,att_deg] = flight_model2(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg,x_all2(1),x_all2(2));
+        Ww_all = explorer_all.W_glider_filter'-W_model_all;
  end
  %%%%% Optimisation sur descente  %%%%%%%%%%%%%%%%%%%%%%%%%%
  %%%---------------------------------------------------------------------%
@@ -577,13 +593,13 @@ tab(:,6)=explorer_all.temp;
 tab(:,7)=explorer_all.time;
 
 
-ign = tab(:,3) > 0;
+ign = tab(:,3) > 0 | tab(:,4) > 0;
 tab(ign,:)=[];
 Mean_glider= mean(tab(:,5));
 ign1=tab(:,5) > Mean_glider +0.05;
 tab(ign1,:)=[];
-ign2=tab(:,1) > 500 | tab(:,1) < 100;
-tab(ign2,:)=[];
+ ign2=tab(:,1) > 500 | tab(:,1) < 100;
+ tab(ign2,:)=[];
 
      global pres dens pitch oil_vol Wglider temp mg
         pres=tab(:,1);
@@ -604,7 +620,7 @@ tab(ign2,:)=[];
      
 % [W_model_diving] = flight_model2(pres,dens,pitch,oil_vol,temp,test(1),test(2),test(3),mg,test(4),test(5));
       [W_model_diving,att_deg_diving,U,att,Fg,Fb] = flight_model(pres,dens,pitch,oil_vol,temp,test(1),test(2),test(3),mg);
- 
+ Ww_diving = tab(:,5)-W_model_diving;
  end
  
 if attack_angle_all == 1 
@@ -975,19 +991,34 @@ if W_glider_W_Model == 1
   plot(explorer_all.time, explorer_all.W_glider_filter,'LineWidth',1.5)
   title('Vitesses verticales du glider all')
   hold on 
-  plot(explorer_all.time,W_model,'LineWidth',1.5)
-  datetick('x',0,'keepticks')
+  plot(explorer_all.time,W_model_all,'LineWidth',1.5)
+  xticks(explorer_all.time(1):0.2:explorer_all.time(end))
+  xticklabels(datestr(explorer_all.time(1):0.2:explorer_all.time(end)))
+  %datetick('x',0,'keepticks')
   legend('W\_glider','W\_model')
+  
+  figure()
+  histogram(Ww_all,30,'BinLimits',[-0.02 0.02])
+ % xlim([-0.02 0.02])
+  %ylim([0 200])
+  title('Ww\_all')
   end
   
   if opt_diving ==1
   figure('Name','Wglider and Wmodel all test','NumberTitle','off','Units','normalized','Position',[0,0.05,0.33,0.38])
-  plot(tab(:,7), tab(:,5)','LineWidth',1.5)
-  title('Vitesses verticales du glider all')
+  plot(tab(:,7), tab(:,5)','+','LineWidth',1)
+  title('Vitesses verticales du glider diving')
   hold on 
-  plot(tab(:,7),W_model_diving,'LineWidth',1.5)
+  plot(tab(:,7),W_model_diving,'+','LineWidth',1)
+  ylim([-0.25 0.1])
   datetick('x',0,'keepticks')
   legend('W\_glider','W\_model')
+  
+  figure()
+  histogram(Ww_diving,30,'BinLimits',[-0.02 0.02])
+  %xlim([-0.02 0.02])
+  %ylim([0 200])
+  title('Ww\_diving')
   end
   
   if opt_descente_1 ==1
@@ -1000,9 +1031,9 @@ if W_glider_W_Model == 1
   legend('W\_glider','W\_model')
   
   figure()
-  histogram(Ww_desc_1)
-  xlim([-0.02 0.02])
-  ylim([0 200])
+  histogram(Ww_desc_1,30,'BinLimits',[-0.02 0.02])
+%   xlim([-0.02 0.02])
+%   ylim([0 200])
   title('Ww\_desc\_1')
   end
   
@@ -1012,13 +1043,14 @@ if W_glider_W_Model == 1
   title('Vitesses verticales du glider descent\_2')
   hold on 
   plot(tab_descent_2.tab(:,7),W_model_desc_2,'+','LineWidth',1)
-  datetick('x',15)
+  ylim([-0.5 0.1])
+  datetick('x',0)
   legend('W\_glider','W\_model')
   
   figure()
-  histogram(Ww_desc_2)
-   xlim([-0.02 0.02])
-  ylim([0 200])
+  histogram(Ww_desc_2,30,'BinLimits',[-0.02 0.02])
+%    xlim([-0.02 0.02])
+%   ylim([0 200])
   title('Ww\_desc\_2')
   end
   
@@ -1032,9 +1064,9 @@ if W_glider_W_Model == 1
   legend('W\_glider','W\_model')
   
   figure()
-  histogram(Ww_mont_1)
-   xlim([-0.02 0.02])
-  ylim([0 200])
+  histogram(Ww_mont_1,30,'BinLimits',[-0.02 0.02])
+%    xlim([-0.02 0.02])
+%   ylim([0 200])
   title('Ww\_mont\_1')
   end
   
@@ -1044,13 +1076,14 @@ if W_glider_W_Model == 1
   title('Vitesses verticales du glider montee\_2')
   hold on 
   plot(tab_montee_2.tab(:,7),W_model_mont_2,'+','LineWidth',1)
+  ylim([0 0.25])
   datetick('x',15)
   legend('W\_glider','W\_model')
   
   figure()
-  histogram(Ww_mont_2)
-   xlim([-0.02 0.02])
-  ylim([0 200])
+  histogram(Ww_mont_2,30,'BinLimits',[-0.02 0.02])
+%    xlim([-0.02 0.02])
+%   ylim([0 200])
   title('Ww\_mont\_2')
   end
 end 
