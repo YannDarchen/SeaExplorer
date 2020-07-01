@@ -50,31 +50,6 @@ data.tableau(:,21)=fillmissing(data.tableau(:,21),'previous');
 data.tableau(:,1)=fillmissing(data.tableau(:,1),'previous');
 data.tableau(:,22)=fillmissing(data.tableau(:,22),'previous');
 
-% to_igno = data.tableau(:,1)==119;
-% data.tableau(to_igno,10)=NaN;%lat
-% data.tableau(to_igno,11)=NaN;%lon
-% %data.tableau(to_igno,8)=NaN;%time
-% data.tableau(to_igno,9)=NaN;%depth
-% data.tableau(to_igno,14)=NaN;%oil
-% data.tableau(to_igno,18)=NaN;%pitch
-% data.tableau(to_igno,20)=NaN;%pressure
-% data.tableau(to_igno,21)=NaN;%temp
-% %data.tableau(to_igno,1)=NaN;%dive
-% data.tableau(to_igno,22)=NaN;%cond
-% 
-% 
-% data.tableau(:,10) =fillmissing(data.tableau(:,10),'constant',0);
-% data.tableau(:,11)=fillmissing(data.tableau(:,11),'constant',0);
-% data.tableau(:,8)=fillmissing(data.tableau(:,8),'constant',0);
-% data.tableau(:,9)=fillmissing(data.tableau(:,9),'constant',0);
-% data.tableau(:,14)=fillmissing(data.tableau(:,14),'constant',0);
-% data.tableau(:,18)=fillmissing(data.tableau(:,18),'constant',0);
-% data.tableau(:,20)=fillmissing(data.tableau(:,20),'constant',0);
-% data.tableau(:,21)=fillmissing(data.tableau(:,21),'constant',0);
-% %data.tableau(:,1)=fillmissing(data.tableau(:,1),'constant',0);
-% data.tableau(:,22)=fillmissing(data.tableau(:,22),'constant',0);
-
-
 %%% Choose what dives you want
 Quintuplet_desc_1 =[];
 Quintuplet_desc_2 =[];
@@ -100,7 +75,7 @@ no=0;
 Display_Web_Map = no;
 Display_Map_Figure = no;
 Lat_Lon = no;
-Depth_oil_pitch = yes;
+Depth_oil_pitch = no;
 Colored_Temperature_Salinity = no;
 Display_3D_trip = no; Animation_3D = no; %be careful animation can be very long 5 dives is recommended
 Temperature_Salinity_Profiles = no;
@@ -815,7 +790,7 @@ ign1 = abs(tab_descent_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fo
 tab_descent_2.tab(ign1,:)=[];
 
 ign2=tab_descent_2.tab(:,1) > 570 | tab_descent_2.tab(:,1) < 100;
-tab_descent_2.tab(ign2,:)=[];
+tab_descent_.tab(ign2,:)=[];
 
 
 %%%Optimisation %%%%%% 
@@ -900,9 +875,6 @@ tab_montee_1.tab(ign,:)=[];
 ign1 = abs(tab_montee_1.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_montee_1.tab(ign1,:)=[];
 
-ign2=tab_montee_1.tab(:,1) > 570 | tab_montee_1.tab(:,1) < 100;
-tab_montee_1.tab(ign2,:)=[];
-
 %%%Optimisation %%%%%% 
 
 global pres dens pitch oil_vol Wglider temp mg
@@ -981,10 +953,6 @@ tab_montee_2.tab(ign,:)=[];
 
 ign1 = abs(tab_montee_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_montee_2.tab(ign1,:)=[];
-
-ign2=tab_montee_2.tab(:,1) > 570 | tab_montee_2.tab(:,1) < 100;
-tab_montee_2.tab(ign2,:)=[];
-
 
 %%%Optimisation %%%%%% 
 
@@ -2312,8 +2280,7 @@ for i =1:q(2)*4
         a=a+1;
     end
 end
- ind = find(abs(Ww_4parts) > 0.018);
- Ww_4parts(ind)=0;
+
 figure('Name','Water vertical velocity ','NumberTitle','off','Units','normalized','Position',[0.66,0.5,0.33,0.42])
     pcolor([1:1:96],-pi,Ww_4parts);   % utilisation de la fonction pcolor + "shading interp"
     shading interp

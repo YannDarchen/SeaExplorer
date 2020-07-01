@@ -1,4 +1,4 @@
-function [explorer] = by_dive(tableau,i,explorer,Const) 
+function [explorer] = by_dive(tableau,i,explorer,Const,double_yo) 
  
 %INPUT : tableau of Data  
 %        number of Dive #i 
@@ -26,11 +26,11 @@ explorer.lat = tableau_dive(:,10)/100;
 explorer.lon = tableau_dive(:,11)/100; 
 explorer.time = tableau_dive(:,8); 
 explorer.depth = tableau_dive(:,9); 
-explorer.oil = tableau_dive(:,13); 
-explorer.pitch = tableau_dive(:,15); 
-explorer.pressure = tableau_dive(:,17); 
-explorer.temp = tableau_dive(:,18); 
-explorer.c = tableau_dive(:,19); 
+explorer.oil = tableau_dive(:,14); 
+explorer.pitch = tableau_dive(:,18); 
+explorer.pressure = tableau_dive(:,20); 
+explorer.temp = tableau_dive(:,21); 
+explorer.c = tableau_dive(:,22); 
 explorer.pitch=explorer.pitch;
  
 %Remove NaN 
@@ -81,9 +81,14 @@ W_glider = zeros(1,explorer.size);
   ind_moins = explorer.pitch <0;
    pitch_negatif = explorer.pitch(ind_moins);
    Mean_moins =mean(pitch_negatif);
-   to_ign = explorer.pitch < Mean_moins -0.5;
-  explorer.pitch(to_ign)=NaN;
-   explorer.pitch = fillmissing(explorer.pitch,'next');
+   if double_yo == 'd1'
+       to_ign = explorer.pitch < Mean_moins -0.5;
+   elseif double_yo == 'd2'
+       to_ign = explorer.pitch < Mean_moins -2.7;
+   end
+  explorer.pitch_filter = explorer.pitch;
+  explorer.pitch_filter(to_ign)=NaN;
+   explorer.pitch_filter = fillmissing(explorer.pitch_filter,'next');
    
    
 
@@ -94,9 +99,9 @@ W_glider = zeros(1,explorer.size);
    explorer.W_glider(TF)=NaN;
    explorer.W_glider = fillmissing(explorer.W_glider,'next');
 
- explorer.W_glider = smoothdata(explorer.W_glider,'SmoothingFactor',0.02);
- explorer.pitch = smoothdata(explorer.pitch,'SmoothingFactor',0.017);
-  explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
+%  explorer.W_glider = smoothdata(explorer.W_glider,'SmoothingFactor',0.02);
+%  explorer.pitch = smoothdata(explorer.pitch,'SmoothingFactor',0.017);
+%   explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
 end 
  
 

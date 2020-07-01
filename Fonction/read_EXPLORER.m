@@ -25,11 +25,11 @@ explorer.lat = tableau(:,10)/100;
 explorer.lon = tableau(:,11)/100;
 explorer.time = tableau(:,8);
 explorer.depth = tableau(:,9);
-explorer.oil = tableau(:,13);
-explorer.pitch = tableau(:,15);
-explorer.pressure = tableau(:,17);
-explorer.temp = tableau(:,18);
-explorer.c = tableau(:,19);
+explorer.oil = tableau(:,14);
+explorer.pitch = tableau(:,18);
+explorer.pressure = tableau(:,20);
+explorer.temp = tableau(:,21);
+explorer.c = tableau(:,22);
 
 
 
@@ -84,14 +84,21 @@ W_glider = zeros(1,explorer.size);
 
 explorer.pitch_filter=[];
 explorer.W_glider_filter=[];
+e=0;
 for j=explorer.first:explorer.last
     
-   explorer1=by_dive(tableau,j,explorer,Const);
+   explorer_d1=by_dive(tableau,j,explorer,Const,'d1');
+   explorer_d2=by_dive(tableau,j,explorer,Const,'d2');
    %Filter pitch 
-   explorer.pitch_filter = [explorer.pitch_filter explorer1.pitch'];
+   if j==explorer.first + e % 1ere descente 
+       explorer.pitch_filter = [explorer.pitch_filter explorer_d1.pitch_filter'];
+   else % 2 eme descente 
+       explorer.pitch_filter = [explorer.pitch_filter explorer_d2.pitch_filter'];
+       e=e+2;
+   end
    
    %Filter W_glider 
-   explorer.W_glider_filter = [explorer.W_glider_filter explorer1.W_glider];
+   explorer.W_glider_filter = [explorer.W_glider_filter explorer_d1.W_glider];
 end
 
 
@@ -109,13 +116,14 @@ explorer.Cd=0.1; % coefficient de trainée
 
 
 %%% Acceleration
-W_glider_lisse = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.02);
+W_glider_lisse = smoothdata(explorer.W_glider_filter,'SmoothingFactor',0.0001);
 %explorer.W_glider_acc = zeros(1,explorer.size);
 %     for k=1:explorer.size-5
 %     explorer.W_glider_acc(k) = (explorer.W_glider_filter(k)-explorer.W_glider_filter(k+5))/(explorer.time(k+5)-explorer.time(k));
 %     
 %     end
-explorer.W_glider_acc = diff(W_glider_lisse)'./(diff(explorer.time)*Const.d2s);
+explorer.W_glider_acc=NaN(length(explorer.pressure),1);
+explorer.W_glider_acc(1:end-1,1) = diff(W_glider_lisse)'./(diff(explorer.time)*Const.d2s);
 %     for k=explorer.size-5:explorer.size
 %        explorer.W_glider_acc(k)=NaN; 
 %     end
@@ -123,7 +131,7 @@ explorer.W_glider_acc = diff(W_glider_lisse)'./(diff(explorer.time)*Const.d2s);
    
  %Lissage
  explorer.W_glider_filter = W_glider_lisse;
- explorer.pitch_filter = smoothdata(explorer.pitch_filter,'SmoothingFactor',0.017);
+ explorer.pitch_filter = smoothdata(explorer.pitch_filter,'SmoothingFactor',0.008);
  explorer.temp = smoothdata(explorer.temp,'SmoothingFactor',0.02);
 
 end
