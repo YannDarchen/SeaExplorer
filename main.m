@@ -1,5 +1,10 @@
 %% -- MAIN -- %% 
 
+%%%% Traitement de données de glider 
+%%%% Calcul de vitesses verticales du courant à partir du modèle théorique
+%%%% de Merchelback 
+%%%% Auteur : Yann Darchen (yann.darchen@gmail.com) Juin 2020
+
 %% ----- Initialisation ----- %%
 % ------------------------------------- %
 close all;clc;clear;clear global;
@@ -8,14 +13,16 @@ addpath('Data_Stage');
 addpath('Fonction');
 addpath('SeaWater');
 
+
 %data_name ='BioswotSeaExplorer_NavCTD_26Juin2020';
-data_name ='BioswotSeaExplorer_NavCTD_26Juin2020(2)';
+%data_name ='BioswotSeaExplorer_NavCTD_26Juin2020(2)';
 %data_name ='BioswotSeaExplorer_Nav&CTD.mat';
 %data_name ='Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat';
+data_name='Fumseck_SeaExplorer_Nav&CTD_03Juillet2020.mat';
 data=load(data_name);
-data.tableau=data.data; %% be careful to the variable of the load 
+%data.tableau=data.data; %% be careful to the variable of the load 
 %Select Year
-Year = [2018];
+Year = [2019];
 i_ign= data.tableau(:,2) ~= Year ;
 ign=i_ign(:,1);
 if length(Year)>1
@@ -50,30 +57,6 @@ data.tableau(:,21)=fillmissing(data.tableau(:,21),'previous');
 data.tableau(:,1)=fillmissing(data.tableau(:,1),'previous');
 data.tableau(:,22)=fillmissing(data.tableau(:,22),'previous');
 
-% to_igno = data.tableau(:,1)==119;
-% data.tableau(to_igno,10)=NaN;%lat
-% data.tableau(to_igno,11)=NaN;%lon
-% %data.tableau(to_igno,8)=NaN;%time
-% data.tableau(to_igno,9)=NaN;%depth
-% data.tableau(to_igno,14)=NaN;%oil
-% data.tableau(to_igno,18)=NaN;%pitch
-% data.tableau(to_igno,20)=NaN;%pressure
-% data.tableau(to_igno,21)=NaN;%temp
-% %data.tableau(to_igno,1)=NaN;%dive
-% data.tableau(to_igno,22)=NaN;%cond
-% 
-% 
-% data.tableau(:,10) =fillmissing(data.tableau(:,10),'constant',0);
-% data.tableau(:,11)=fillmissing(data.tableau(:,11),'constant',0);
-% data.tableau(:,8)=fillmissing(data.tableau(:,8),'constant',0);
-% data.tableau(:,9)=fillmissing(data.tableau(:,9),'constant',0);
-% data.tableau(:,14)=fillmissing(data.tableau(:,14),'constant',0);
-% data.tableau(:,18)=fillmissing(data.tableau(:,18),'constant',0);
-% data.tableau(:,20)=fillmissing(data.tableau(:,20),'constant',0);
-% data.tableau(:,21)=fillmissing(data.tableau(:,21),'constant',0);
-% %data.tableau(:,1)=fillmissing(data.tableau(:,1),'constant',0);
-% data.tableau(:,22)=fillmissing(data.tableau(:,22),'constant',0);
-
 
 %%% Choose what dives you want
 Quintuplet_desc_1 =[];
@@ -85,11 +68,16 @@ Precision_d2=[];
 Precision_m1=[];
 Precision_m2=[];
 Fb_desc_1=[];
-%for fn=1:2:36
+Ww_d1_final=[];
+Ww_d2_final=[];
+Ww_m1_final=[];
+Ww_m2_final=[];
+
+%for fn=0:12:24
   
-explorer.first_dive =92; %default is 1 
+explorer.first_dive =6; %default is 1 
 %explorer.last_dive = data.tableau(end,1); %default is last 
-explorer.last_dive =139;
+explorer.last_dive =39;
 explorer.first=explorer.first_dive; % in case you need to change this value 
 explorer.last=explorer.last_dive;
 
@@ -100,7 +88,7 @@ no=0;
 Display_Web_Map = no;
 Display_Map_Figure = no;
 Lat_Lon = no;
-Depth_oil_pitch = yes;
+Depth_oil_pitch = no;
 Colored_Temperature_Salinity = no;
 Display_3D_trip = no; Animation_3D = no; %be careful animation can be very long 5 dives is recommended
 Temperature_Salinity_Profiles = no;
@@ -109,26 +97,29 @@ Temperature_Salinity_Profiles = no;
 vertical_velocities = yes; % always yes in order to calculate vertical velocities
 
 %%% les optimisations 
-opt_descente_1 = yes;
-opt_descente_2 = yes;
-opt_montee_1 = yes;
-opt_montee_2 = yes;
+opt_descente_1 = no;
+opt_descente_2 = no;
+opt_montee_1 = no;
+opt_montee_2 = no;
 opt_all = no;
 opt_bydive = no;
 opt_diving = no;
 
-Descente_1 =yes;
-Descente_2 =yes;
-Montee_1 =yes;
-Montee_2 =yes;
-Together = yes;
+valeurs_opt=no;
+valeurs_moyennes=no;
 
-W_glider_W_Model = yes;  attack_angle_bydive = no; attack_angle_all = no;
+Descente_1 =no;
+Descente_2 =no;
+Montee_1 =no;
+Montee_2 =no;
+Together = no;
+
+W_glider_W_Model = no;  attack_angle_bydive = no; attack_angle_all = no;
 Parameters_evolution = no; Parameters_evolution_bydive =no;
-water_velocity_descent_bydive = no; hist_desc = no;
+water_velocity_descent_bydive = no; hist_desc = yes;
 water_velocity_ascent_by_dive=no; 
-water_velocity_descent_all = no;
-water_velocity_ascent_all = no; hist_asc=no; sbplot = no;
+water_velocity_descent_all = yes;
+water_velocity_ascent_all = yes; hist_asc=no; sbplot = no;
 sub_asc_desc = no;
 water_velocity_all_bydive = no;
 water_velocity_diving = no;
@@ -138,7 +129,13 @@ water_velocity_diving = no;
 Const.d2s = 86400;
 Const.g=9.81; % gravité
 Const.R = 6371;
-
+Const.V0 = 0.05944;
+Const.eps_d= 3.9230e-10;
+Const.eps_m=4.0410e-10;
+Const.Cd_d = 0.1039;
+Const.Cd_m = 0.995;
+Const.aw=2.6;
+Const.Cdw=2.6;
 
 %load(nom_de_fichier);
 load('blue_red_cmap.mat')
@@ -220,17 +217,17 @@ if Lat_Lon == 1
     pause(1.5)
     figure('Name','Latitude and Longitude','NumberTitle','off','Units','normalized','Position',[0.33,0.5,0.33,0.42]);
     subplot(2,1,1)
-    %plot(explorer_all.time,explorer_all.lat,'LineWidth',2)
-    plot(explorer_all.lat,'LineWidth',2)
+    plot(explorer_all.time,explorer_all.lat,'LineWidth',2)
+    %plot(explorer_all.lat,'LineWidth',2)
     title('Evolution de la latitude')
     ylabel('latitude en °')
-    datetick('x',2)
+    datetick('x',2,'keepticks')
 
     subplot(2,1,2)
     plot(explorer_all.time,explorer_all.lon,'LineWidth',2)
     title('Evolution de la longitude')
     ylabel('longitude en °')
-    datetick('x',2)
+    datetick('x',2,'keepticks')
 
 end
 
@@ -243,12 +240,17 @@ if Depth_oil_pitch == 1
     pause(1.5)
     figure('Name','depth oil volume and pitch','NumberTitle','off','Units','normalized','Position',[0.66,0.5,0.33,0.42]);
     yyaxis left
-    plot(explorer_all.time,-explorer_all.depth,'LineWidth',1)
+    plot(explorer_all.time,-explorer_all.depth,'k','LineWidth',1)
     hold on 
     plot(explorer_all.time,explorer_all.oil,'-+','LineWidth',1)
     ylabel('profondeur(m), huile (ml)')
     yyaxis right
-    plot(explorer_all.time,explorer_all.pitch_filter*(pi/180),'-+','LineWidth',1)
+    %plot(explorer_all.time,explorer_all.pitch_filter,'-+','LineWidth',1)
+    plot(explorer_all.time,explorer_all.pitch,'-+','LineWidth',1)
+    ylabel('pitch (rad)')
+    legend('profondeur','huile','pitch')
+    title('Profondeur, volume huile et pitch')
+    datetick('x',0,'keepticks')
     
     figure('Name','depth oil volume and pitch','NumberTitle','off','Units','normalized','Position',[0.66,0.5,0.33,0.42]);
     yyaxis left
@@ -330,7 +332,7 @@ if Colored_Temperature_Salinity == 1 % only descents
 %         explorer2_bydive.s(to_igno)=[];
 %         explorer2_bydive.temp=fillmissing(explorer2_bydive.temp,'previous');
 %         explorer2_bydive.s=fillmissing(explorer2_bydive.s,'previous');
-        pi=[0:1:600];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
+        pi=[0:1:max(explorer_all.pressure)];  % construction du vecteur pression régulier pi avec un pas de 0.5 dbar qui va servir de base à l'interpolation
         ti=interp1(D(:,1),D(:,2),pi); 
         si=interp1(D(:,1),D(:,3),pi);
         
@@ -363,7 +365,7 @@ if Colored_Temperature_Salinity == 1 % only descents
     pcolor([explorer.first_dive:explorer.last_dive],-pi,tab_si);   % utilisation de la fonction pcolor + "shading interp"
     shading interp
     H=colorbar;
-    ylabel(H,'   psu','FontSize',12,'Rotation',0);
+    ylabel(H,'      psu','FontSize',12,'Rotation',0);
     grid on
     ax = gca;
     ax.Layer='Top';
@@ -623,6 +625,8 @@ tab_all.tab(ign1,:)=[];
          %[W_model] = flight_model(pres,dens,pitch,oil_vol,temp,param0(1),param0(2),param0(3),mg);
          [W_model_all,att_deg] = flight_model2(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg,x_all2(1),x_all2(2));
         Ww_all = tab_all.tab(:,5)-W_model_all;
+        Ww_model_one_quintuplet= flight_model2(pres,dens,pitch,oil_vol,temp,0.59945,4.0265e-10,0.1040,mg,2.6,2.6);
+        Ww_all_one_quintuplet = tab_all.tab(:,5)-W_model_one_quintuplet;
  end
  %%%%% Optimisation sur descente  %%%%%%%%%%%%%%%%%%%%%%%%%%
  %%%---------------------------------------------------------------------%
@@ -725,7 +729,7 @@ tab_descent_1.tab(ign,:)=[];
 ign1 = abs(tab_descent_1.tab(:,8)) > 0.005;
 tab_descent_1.tab(ign1,:)=[];
 
-ign2=tab_descent_1.tab(:,1) > 570 | tab_descent_1.tab(:,1) < 100;
+ign2=tab_descent_1.tab(:,1) > 570 | tab_descent_1.tab(:,1) < 40;
  tab_descent_1.tab(ign2,:)=[];
  
 %%%Optimisation %%%%%% 
@@ -757,7 +761,7 @@ param0=[aw,Cd1w];
 
 Precision_d1=[Precision_d1 precision_descent_11];
 Quintuplet_desc_1 =[Quintuplet_desc_1 [x_desc_1 x_desc_11]'];
-[W_model_desc_1,att_deg,U,att,Fg,Fb_d1,Fl,Fd] = flight_model2(pres,dens,pitch,oil_vol,temp,x_desc_1(1),x_desc_1(2),x_desc_1(3),mg,x_desc_11(1),x_desc_11(2));
+[W_model_desc_1,att_deg,U,att,Fg,Fb_d1,Fl,Fd,vx_d1] = flight_model2(pres,dens,pitch,oil_vol,temp,x_desc_1(1),x_desc_1(2),x_desc_1(3),mg,x_desc_11(1),x_desc_11(2));
 ind=Fb_d1 ==0;
 Fb_d1(ind)=[];
 Fbd1=nanmean(Fb_d1);
@@ -765,6 +769,8 @@ Fb_desc_1=[Fb_desc_1 Fbd1];
 
 Ww_desc_1 = tab_descent_1.tab(:,5)-W_model_desc_1;
 
+[W_model_desc_1_moy] = flight_model2(pres,dens,pitch,oil_vol,temp,Const.V0,Const.eps_d,Const.Cd_d,mg,Const.aw,Const.Cdw);
+Ww_desc_1_moy = tab_descent_1.tab(:,5)-W_model_desc_1_moy;
  end
  
  %%%%% Optimisation sur 2ème descente  %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -814,7 +820,7 @@ tab_descent_2.tab(ign,:)=[];
 ign1 = abs(tab_descent_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_descent_2.tab(ign1,:)=[];
 
-ign2=tab_descent_2.tab(:,1) > 570 | tab_descent_2.tab(:,1) < 100;
+ign2=tab_descent_2.tab(:,1) > 570 | tab_descent_2.tab(:,1) < 40;
 tab_descent_2.tab(ign2,:)=[];
 
 
@@ -846,8 +852,11 @@ param0=[aw,Cd1w];
 
 Precision_d2=[Precision_d2 precision_descent_22];
 Quintuplet_desc_2 =[Quintuplet_desc_2 [x_desc_2 x_desc_22]'];
-[W_model_desc_2] = flight_model2(pres,dens,pitch,oil_vol,temp,x_desc_2(1),x_desc_2(2),x_desc_2(3),mg,x_desc_22(1),x_desc_22(2));
+[W_model_desc_2,att_deg,U,att,Fg,Fb_d1,Fl,Fd,vx_d2] = flight_model2(pres,dens,pitch,oil_vol,temp,x_desc_2(1),x_desc_2(2),x_desc_2(3),mg,x_desc_22(1),x_desc_22(2));
 Ww_desc_2 = tab_descent_2.tab(:,5)-W_model_desc_2;
+
+[W_model_desc_2_moy] = flight_model2(pres,dens,pitch,oil_vol,temp,Const.V0,Const.eps_d,Const.Cd_d,mg,Const.aw,Const.Cdw);
+Ww_desc_2_moy = tab_descent_2.tab(:,5)-W_model_desc_2_moy;
  end
  
  
@@ -900,7 +909,7 @@ tab_montee_1.tab(ign,:)=[];
 ign1 = abs(tab_montee_1.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_montee_1.tab(ign1,:)=[];
 
-ign2=tab_montee_1.tab(:,1) > 570 | tab_montee_1.tab(:,1) < 100;
+ign2=tab_montee_1.tab(:,1) > 570 | tab_montee_1.tab(:,1) < 40;
 tab_montee_1.tab(ign2,:)=[];
 
 %%%Optimisation %%%%%% 
@@ -931,8 +940,11 @@ param0=[aw,Cd1w];
 
 Precision_m1=[Precision_m1 precision_montee_11];
 Quintuplet_mont_1 =[Quintuplet_mont_1 [x_mont_1 x_mont_11]'];
-[W_model_mont_1,att_deg,U,att,Fg,Fb_m1,Fl,Fd] = flight_model2(pres,dens,pitch,oil_vol,temp,x_mont_1(1),x_mont_1(2),x_mont_1(3),mg,x_mont_11(1),x_mont_11(2));
+[W_model_mont_1,att_deg,U,att,Fg,Fb_m1,Fl,Fd,vx_m1] = flight_model2(pres,dens,pitch,oil_vol,temp,x_mont_1(1),x_mont_1(2),x_mont_1(3),mg,x_mont_11(1),x_mont_11(2));
 Ww_mont_1 = tab_montee_1.tab(:,5)-W_model_mont_1;
+
+[W_model_mont_1_moy] = flight_model2(pres,dens,pitch,oil_vol,temp,Const.V0,Const.eps_m,Const.Cd_m,mg,Const.aw,Const.Cdw);
+Ww_mont_1_moy = tab_montee_1.tab(:,5)-W_model_mont_1_moy;
  end
 
    %%%%% Optimisation sur 2ème montée  %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -982,7 +994,7 @@ tab_montee_2.tab(ign,:)=[];
 ign1 = abs(tab_montee_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_montee_2.tab(ign1,:)=[];
 
-ign2=tab_montee_2.tab(:,1) > 570 | tab_montee_2.tab(:,1) < 100;
+ign2=tab_montee_2.tab(:,1) > 570 | tab_montee_2.tab(:,1) < 40;
 tab_montee_2.tab(ign2,:)=[];
 
 
@@ -1014,18 +1026,19 @@ param0=[aw,Cd1w];
 
 Precision_m2=[Precision_m2 precision_montee_22];
 Quintuplet_mont_2 =[Quintuplet_mont_2 [x_mont_2 x_mont_22]'];
-[W_model_mont_2] = flight_model2(pres,dens,pitch,oil_vol,temp,x_mont_2(1),x_mont_2(2),x_mont_2(3),mg,x_mont_22(1),x_mont_22(2));
+[W_model_mont_2,att_deg,U,att,Fg,Fb_d1,Fl,Fd,vx_m2] = flight_model2(pres,dens,pitch,oil_vol,temp,x_mont_2(1),x_mont_2(2),x_mont_2(3),mg,x_mont_22(1),x_mont_22(2));
 
 %histogramme
 Ww_mont_2 = tab_montee_2.tab(:,5)-W_model_mont_2;
 
-
+[W_model_mont_2_moy] = flight_model2(pres,dens,pitch,oil_vol,temp,Const.V0,Const.eps_m,Const.Cd_m,mg,Const.aw,Const.Cdw);
+Ww_mont_2_moy = tab_montee_2.tab(:,5)-W_model_mont_2_moy;
  end
 
  
  
 end
-%end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %---------------------------------------------------------------------%
 
@@ -1403,7 +1416,8 @@ for j= explorer.first_dive:explorer.last_dive
    temp=explorer.temp;
    mg=explorer_all.M;
 
-   [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg);
+   %[W_model] = flight_model(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg);
+   [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,0.059945,4.0265e-10,0.1040,mg);
 
  max_ind = find(explorer.pressure == max(explorer.pressure));
  to_ign = [max_ind:length(explorer.pressure)];
@@ -1524,7 +1538,7 @@ tableau_w_glider=[];
 tableau_w_model=[];
 tableau_ww6=[];
 for j= explorer.first_dive:explorer.last_dive 
-       explorer = by_dive(tableau,j,explorer,Const);%data by dive
+       explorer = by_dive(tableau,j,explorer,Const,'d1');%data by dive
  %%% Opt on diving 
 sz=length(explorer.pressure);
 tab1=zeros(sz,7);
@@ -1670,7 +1684,9 @@ for j= explorer.first_dive:explorer.last_dive
    temp=explorer.temp;
    mg=explorer_all.M;
 
-   [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg);
+%   [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,x_all(1),x_all(2),x_all(3),mg);
+   [W_model] = flight_model(pres,dens,pitch,oil_vol,temp,0.059945,4.0265e-10,0.995,mg);
+
 
  max_ind = find(explorer.pressure == max(explorer.pressure));
  to_ign = [1:max_ind];
@@ -2057,7 +2073,8 @@ end
 %% %% ----- Descente_1 ----- %%
 % ------------------------------------- %
 if Descente_1==1
-
+if valeurs_opt == 1 
+    
 q=size(tab_descent_1.tab);
 Ww_d1=[];
 a=1;
@@ -2095,6 +2112,60 @@ while i < q(1)+1
     end
     
 end
+Ww_d1_final =[Ww_d1_final Ww_d1]; 
+
+figure()
+pcolor([1:1:6],-pi,Ww_d1);   % utilisation de la fonction pcolor + "shading interp"
+shading interp
+colormap(blue_red_cmap)
+ caxis([-0.025 0.025])
+H=colorbar;
+ylabel(H,'          ','FontSize',12,'Rotation',0);
+grid on
+ax = gca;
+ax.Layer='Top';
+xlabel('Numéro de plongée')
+ylabel('- Pression (dbar)')
+title('Ww\_d1')
+end
+    if valeurs_moyennes == 1
+        q=size(tab_descent_1.tab);
+Ww_d1=[];
+a=1;
+j=1;
+pi=[0:1:640];
+i=1;
+while i < q(1)+1
+    if i == 1 
+        Ww_1(j)=Ww_desc_1_moy(i);
+        pression(j)=tab_descent_1.tab(i,1);
+        j=j+1;
+        i=i+1;
+    else
+    
+       if isnan(tab_descent_1.tab(i,1)) || tab_descent_1.tab(i,1)<tab_descent_1.tab(i-1,1) || i == q(1)
+            disp(i)
+           ww_1=interp1(pression,Ww_1,pi);
+           Ww_d1=[Ww_d1 ww_1'];
+           Ww_1=[];
+           pression=[];
+           j=1;
+           while (isnan(tab_descent_1.tab(i,1)) || tab_descent_1.tab(i,1)<tab_descent_1.tab(i-1,1)) && i < q(1)
+              i=i+1; 
+           %   disp(i)
+           end
+           while i==q(1)
+              i=i+1; 
+           end
+       else
+           Ww_1(j)=Ww_desc_1_moy(i);
+           pression(j)=tab_descent_1.tab(i,1);
+           j=j+1;
+           i=i+1;
+       end
+    end
+    
+end
 
 figure()
 pcolor([1:1:24],-pi,Ww_d1);   % utilisation de la fonction pcolor + "shading interp"
@@ -2109,12 +2180,14 @@ ax.Layer='Top';
 xlabel('Numéro de plongée')
 ylabel('- Pression (dbar)')
 title('Ww\_d1')
-
+        
+    end
 end
 %% %% ----- Montee_1 ----- %%
 % ------------------------------------- %
 if Montee_1 ==1
 
+    if valeurs_opt == 1
 q=size(tab_montee_1.tab);
 Ww_m1=[];
 a=1;
@@ -2131,7 +2204,7 @@ while i < q(1)+1
         i=i+1;
     else
     
-       if isnan(tab_montee_1.tab(i,1)) || tab_montee_1.tab(i,1)>tab_montee_1.tab(i-1,1) || i == q(1)
+       if isnan(tab_montee_1.tab(i,1)) || i == q(1)
 
            ww_1=interp1(pression,Ww_1,pi);
            Ww_m1=[Ww_m1 ww_1'];
@@ -2153,6 +2226,63 @@ while i < q(1)+1
     end
 end
 
+Ww_m1_final =[Ww_m1_final Ww_m1];
+
+figure()
+pcolor([1:1:6],-pi,Ww_m1);   % utilisation de la fonction pcolor + "shading interp"
+shading interp
+colormap(blue_red_cmap)
+caxis([-0.025 0.025])
+H=colorbar;
+ylabel(H,'          ','FontSize',12,'Rotation',0);
+grid on
+ax = gca;
+ax.Layer='Top';
+xlabel('Numéro de plongée')
+ylabel('- Pression (dbar)')
+title('Ww\_m1')
+    end
+    
+   if valeurs_moyennes == 1
+       
+       q=size(tab_montee_1.tab);
+Ww_m1=[];
+a=1;
+j=1;
+pi=[0:1:640];
+i=1;
+Ww_1=[];
+pression=[];
+while i < q(1)+1
+    if i == 1 
+        Ww_1(j)=Ww_mont_1_moy(i);
+        pression(j)=tab_montee_1.tab(i,1);
+        j=j+1;
+        i=i+1;
+    else
+    
+       if isnan(tab_montee_1.tab(i,1)) || tab_montee_1.tab(i,1)>tab_montee_1.tab(i-1,1) || i == q(1)
+
+           ww_1=interp1(pression,Ww_1,pi);
+           Ww_m1=[Ww_m1 ww_1'];
+           Ww_1=[];
+           pression=[];
+           j=1;
+           while (isnan(tab_montee_1.tab(i,1)) || tab_montee_1.tab(i,1)>tab_montee_1.tab(i-1,1)) && i < q(1)
+              i=i+1; 
+           end
+            while i==q(1)
+              i=i+1; 
+           end
+       else
+           Ww_1(j)=Ww_mont_1_moy(i);
+           pression(j)=tab_montee_1.tab(i,1);
+           j=j+1;
+           i=i+1;
+       end
+    end
+end
+
 figure()
 pcolor([1:1:24],-pi,Ww_m1);   % utilisation de la fonction pcolor + "shading interp"
 shading interp
@@ -2166,13 +2296,13 @@ ax.Layer='Top';
 xlabel('Numéro de plongée')
 ylabel('- Pression (dbar)')
 title('Ww\_m1')
-
+   end
 end
 
 %% %% ----- Descente_2 ----- %%
 % ------------------------------------- %
 if Descente_2==1
-
+    if valeurs_opt == 1
 q=size(tab_descent_2.tab);
 Ww_d2=[];
 a=1;
@@ -2189,7 +2319,7 @@ while i < q(1)+1
         i=i+1;
     else
     
-       if isnan(tab_descent_2.tab(i,1)) || tab_descent_2.tab(i,1)<tab_descent_2.tab(i-1,1) || i == q(1)
+       if isnan(tab_descent_2.tab(i,1))  || i == q(1)
 
            ww_1=interp1(pression,Ww_1,pi);
            Ww_d2=[Ww_d2 ww_1'];
@@ -2211,6 +2341,62 @@ while i < q(1)+1
     end
 end
 
+Ww_d2_final =[Ww_d2_final Ww_d2];
+
+figure()
+pcolor([1:1:6],-pi,Ww_d2);   % utilisation de la fonction pcolor + "shading interp"
+shading interp
+colormap(blue_red_cmap)
+caxis([-0.025 0.025])
+H=colorbar;
+ylabel(H,'          ','FontSize',12,'Rotation',0);
+grid on
+ax = gca;
+ax.Layer='Top';
+xlabel('Numéro de plongée')
+ylabel('- Pression (dbar)')
+title('Ww\_d2')
+    end
+    
+    if valeurs_moyennes == 1 
+        q=size(tab_descent_2.tab);
+Ww_d2=[];
+a=1;
+j=1;
+pi=[0:1:640];
+i=1;
+Ww_1=[];
+pression=[];
+while i < q(1)+1
+    if i == 1 
+        Ww_1(j)=Ww_desc_2_moy(i);
+        pression(j)=tab_descent_2.tab(i,1);
+        j=j+1;
+        i=i+1;
+    else
+    
+       if isnan(tab_descent_2.tab(i,1)) || tab_descent_2.tab(i,1)<tab_descent_2.tab(i-1,1) || i == q(1)
+
+           ww_1=interp1(pression,Ww_1,pi);
+           Ww_d2=[Ww_d2 ww_1'];
+           Ww_1=[];
+           pression=[];
+           j=1;
+           while (isnan(tab_descent_2.tab(i,1)) || tab_descent_2.tab(i,1)<tab_descent_2.tab(i-1,1)) && i < q(1)
+              i=i+1; 
+           end
+           while i==q(1)
+              i=i+1; 
+           end
+       else
+           Ww_1(j)=Ww_desc_2_moy(i);
+           pression(j)=tab_descent_2.tab(i,1);
+           j=j+1;
+           i=i+1;
+       end
+    end
+end
+
 figure()
 pcolor([1:1:24],-pi,Ww_d2);   % utilisation de la fonction pcolor + "shading interp"
 shading interp
@@ -2224,12 +2410,12 @@ ax.Layer='Top';
 xlabel('Numéro de plongée')
 ylabel('- Pression (dbar)')
 title('Ww\_d2')
-
+    end
 end
 %% %% ----- Montee_2----- %%
 % ------------------------------------- %
 if Montee_2==1
-
+    if valeurs_opt == 1 
 q=size(tab_montee_2.tab);
 Ww_m2=[];
 a=1;
@@ -2246,7 +2432,7 @@ while i < q(1)+1
         i=i+1;
     else
     
-       if isnan(tab_montee_2.tab(i,1)) || tab_montee_2.tab(i,1)>tab_montee_2.tab(i-1,1) || i == q(1)
+       if isnan(tab_montee_2.tab(i,1))  || i == q(1)
 
            ww_1=interp1(pression,Ww_1,pi);
            Ww_m2=[Ww_m2 ww_1'];
@@ -2268,6 +2454,62 @@ while i < q(1)+1
     end
 end
 
+Ww_m2_final =[Ww_m2_final Ww_m2];
+
+figure()
+pcolor([1:1:6],-pi,Ww_m2);   % utilisation de la fonction pcolor + "shading interp"
+shading interp
+colormap(blue_red_cmap)
+caxis([-0.025 0.025])
+H=colorbar;
+ylabel(H,'          ','FontSize',12,'Rotation',0);
+grid on
+ax = gca;
+ax.Layer='Top';
+xlabel('Numéro de plongée')
+ylabel('- Pression (dbar)')
+title('Ww\_m2')
+    end
+    
+    if valeurs_moyennes ==1
+        q=size(tab_montee_2.tab);
+Ww_m2=[];
+a=1;
+j=1;
+pi=[0:1:640];
+i=1;
+Ww_1=[];
+pression=[];
+while i < q(1)+1
+    if i == 1 
+        Ww_1(j)=Ww_mont_2_moy(i);
+        pression(j)=tab_montee_2.tab(i,1);
+        j=j+1;
+        i=i+1;
+    else
+    
+       if isnan(tab_montee_2.tab(i,1)) || tab_montee_2.tab(i,1)>tab_montee_2.tab(i-1,1) || i == q(1)
+
+           ww_1=interp1(pression,Ww_1,pi);
+           Ww_m2=[Ww_m2 ww_1'];
+           Ww_1=[];
+           pression=[];
+           j=1;
+           while (isnan(tab_montee_2.tab(i,1)) || tab_montee_2.tab(i,1)>tab_montee_2.tab(i-1,1)) && i < q(1)
+              i=i+1; 
+           end
+           while i==q(1)
+              i=i+1; 
+           end
+       else
+           Ww_1(j)=Ww_mont_2_moy(i);
+           pression(j)=tab_montee_2.tab(i,1);
+           j=j+1;
+           i=i+1;
+       end
+    end
+end
+
 figure()
 pcolor([1:1:24],-pi,Ww_m2);   % utilisation de la fonction pcolor + "shading interp"
 shading interp
@@ -2281,41 +2523,43 @@ ax.Layer='Top';
 xlabel('Numéro de plongée')
 ylabel('- Pression (dbar)')
 title('Ww\_m2')
-
+    end
 end
 
+%end %fenetre glissante 
 %% %% ----- Together 
 
 if Together ==1
-q=size(Ww_d1);
+q=size(Ww_d1_final);
 Ww_4parts=zeros(q(1),q(2)*4);
 a=1;
 b=1;
 for i =1:q(2)*4
     
     if i == b 
-        Ww_4parts(:,i)=Ww_d1(:,a);
+        Ww_4parts(:,i)=Ww_d1_final(:,a);
         
         
     end
     if i == b+1
-         Ww_4parts(:,i)=Ww_m1(:,a);
+         Ww_4parts(:,i)=Ww_m1_final(:,a);
        
     end
     if i == b+2
-         Ww_4parts(:,i)=Ww_d2(:,a);
+         Ww_4parts(:,i)=Ww_d2_final(:,a);
         
     end
     if i == b+3
-         Ww_4parts(:,i)=Ww_m2(:,a);
+         Ww_4parts(:,i)=Ww_m2_final(:,a);
         b=b+4;
         a=a+1;
     end
 end
  ind = find(abs(Ww_4parts) > 0.018);
  Ww_4parts(ind)=0;
+ size_Ww_4parts=size(Ww_4parts);
 figure('Name','Water vertical velocity ','NumberTitle','off','Units','normalized','Position',[0.66,0.5,0.33,0.42])
-    pcolor([1:1:96],-pi,Ww_4parts);   % utilisation de la fonction pcolor + "shading interp"
+    pcolor([1:1:size_Ww_4parts(2)],-pi,Ww_4parts);   % utilisation de la fonction pcolor + "shading interp"
     shading interp
     colormap(blue_red_cmap)
     H=colorbar;

@@ -32,17 +32,18 @@ for j = 1:length(tableau)-1
 end
 
 mx = max(S);
-explorer.dive = NaN(mx,explorer.last_dive-explorer.first_dive+1); 
-explorer.lat = NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.lon =NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.time = NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.depth = NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.oil = NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.pitch = NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.pressure = NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.temp = NaN(mx,explorer.last_dive-explorer.first_dive+1);
-explorer.c =NaN(mx,explorer.last_dive-explorer.first_dive+1);
-
+explorer.dive = NaN(mx+2,explorer.last_dive-explorer.first_dive+1); 
+explorer.lat = NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.lon =NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.time = NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.depth = NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.oil = NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.pitch = NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.pressure = NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.temp = NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.c =NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.s =NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
+explorer.dens =NaN(mx+2,explorer.last_dive-explorer.first_dive+1);
 a=0;
 i=1;
 for j = 1:length(tableau)-1

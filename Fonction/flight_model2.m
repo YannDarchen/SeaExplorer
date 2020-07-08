@@ -1,4 +1,4 @@
-function [wg,att_deg,U,att,Fg,Fb,Fl,Fd] = flight_model2(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg,aw,Cd1w)
+function [wg,att_deg,U,att,Fg,Fb,Fl,Fd,vx] = flight_model2(p,rho,pitch,dvbp,temp,Vg,eps,Cd0,mg,aw,Cd1w)
 %%%%%
 % Glider flight model (adapted from Merckelbach et al JAOT 2010), Anthony Bosse (abolod@locean-ipsl.upmc.fr), September 2015
 % INPUT variables :
@@ -66,6 +66,7 @@ Fb = g*(rho).*(Vg*(1-eps*(p*10000)+alphat.*(temp-13.2))+(dvbp)/1000000);
 U = real(sqrt( 2*(Fb-Fg)./((rho).*S.*(Cd0+(Cd1w+Cd1h).*(att.^2)).*((sin(pitch+att).^2 +...
         cos(pitch+att).^2)./sin(pitch+att))) )); % !! sign error in equation (13) from Merckelbach et al...
 wg = U.*sin(att+pitch);
+vx=U.*cos(att+pitch);
 % Drag and lift forces
 Fd = 0.5.*rho.*(Cd0+(Cd1w+Cd1h).*(att.^2)).*S.*U.*U;
 Fl = 0.5.*rho.*(ah+aw).*att.*S.*U.*U; %positive upward
