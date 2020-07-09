@@ -76,7 +76,7 @@ Triplet=[];
 Triplet_diving=[];
 Triplet_climbing=[];
 
-for fn=0:2:36
+for fn=0:12:24
   
 explorer.first_dive =6+fn; %default is 1 
 %explorer.last_dive = data.tableau(end,1); %default is last 
@@ -109,14 +109,14 @@ opt_bydive = no;
 opt_diving = no;
 opt_climbing=no;
 
-valeurs_opt=no;
+valeurs_opt=yes;
 valeurs_moyennes=no;
 
-Descente_1 =no;
-Descente_2 =no;
-Montee_1 =no;
-Montee_2 =no;
-Together = no;
+Descente_1 =yes;
+Descente_2 =yes;
+Montee_1 =yes;
+Montee_2 =yes;
+Together = yes;
 All = no;
 Diving=no;
 Climbing=no; 
@@ -2195,9 +2195,22 @@ while i < q(1)+1
         i=i+1;
     else
     
-       if isnan(tab_descent_1.tab(i,1)) || tab_descent_1.tab(i,1)<tab_descent_1.tab(i-1,1) || i == q(1)
+       if isnan(tab_descent_1.tab(i,1)) || abs(tab_descent_1.tab(i-1,1)-tab_descent_1.tab(i,1)) > max(tab_descent_1.tab(:,1))/2 || i == q(1)
+            B=zeros(length(pression),2);
+            B(:,1)=pression;
+            B(:,2)=Ww_1;
+            C=sortrows(B,1);
+            to_igno = [];
+            for k=1:length(C)-1
+                if  C(k,1) == C(k+1,1) % delete doublon
+                to_igno = [to_igno k+1];
+                end
+            end
+            C(to_igno,:)=[];
+            
+           ww_1=interp1(C(:,1),C(:,2),pi);
             disp(i)
-           ww_1=interp1(pression,Ww_1,pi);
+           
            Ww_d1=[Ww_d1 ww_1'];
            Ww_1=[];
            pression=[];
@@ -2310,9 +2323,22 @@ while i < q(1)+1
         i=i+1;
     else
     
-       if isnan(tab_montee_1.tab(i,1)) || i == q(1)
-
-           ww_1=interp1(pression,Ww_1,pi);
+       if isnan(tab_montee_1.tab(i,1))|| abs(tab_montee_1.tab(i-1,1)-tab_montee_1.tab(i,1)) > max(tab_montee_1.tab(:,1))/2 || i == q(1)
+            
+           B=zeros(length(pression),2);
+            B(:,1)=pression;
+            B(:,2)=Ww_1;
+            C=sortrows(B,1);
+            to_igno = [];
+            for k=1:length(C)-1
+                if  C(k,1) == C(k+1,1) % delete doublon
+                to_igno = [to_igno k+1];
+                end
+            end
+            C(to_igno,:)=[];
+            
+           ww_1=interp1(C(:,1),C(:,2),pi);
+           
            Ww_m1=[Ww_m1 ww_1'];
            Ww_1=[];
            pression=[];
@@ -2425,9 +2451,21 @@ while i < q(1)+1
         i=i+1;
     else
     
-       if isnan(tab_descent_2.tab(i,1))  || i == q(1)
-
-           ww_1=interp1(pression,Ww_1,pi);
+       if isnan(tab_descent_2.tab(i,1))|| abs(tab_descent_2.tab(i-1,1)-tab_descent_2.tab(i,1)) > max(tab_descent_2.tab(:,1))/2  || i == q(1)
+            B=zeros(length(pression),2);
+            B(:,1)=pression;
+            B(:,2)=Ww_1;
+            C=sortrows(B,1);
+            to_igno = [];
+            for k=1:length(C)-1
+                if  C(k,1) == C(k+1,1) % delete doublon
+                to_igno = [to_igno k+1];
+                end
+            end
+            C(to_igno,:)=[];
+            
+           ww_1=interp1(C(:,1),C(:,2),pi);
+         
            Ww_d2=[Ww_d2 ww_1'];
            Ww_1=[];
            pression=[];
@@ -2538,9 +2576,22 @@ while i < q(1)+1
         i=i+1;
     else
     
-       if isnan(tab_montee_2.tab(i,1))  || i == q(1)
-
-           ww_1=interp1(pression,Ww_1,pi);
+       if isnan(tab_montee_2.tab(i,1)) || abs(tab_montee_2.tab(i-1,1)-tab_montee_2.tab(i,1)) > max(tab_montee_2.tab(:,1))/2 || i == q(1)
+            
+           B=zeros(length(pression),2);
+            B(:,1)=pression;
+            B(:,2)=Ww_1;
+            C=sortrows(B,1);
+            to_igno = [];
+            for k=1:length(C)-1
+                if  C(k,1) == C(k+1,1) % delete doublon
+                to_igno = [to_igno k+1];
+                end
+            end
+            C(to_igno,:)=[];
+            
+           ww_1=interp1(C(:,1),C(:,2),pi);
+           
            Ww_m2=[Ww_m2 ww_1'];
            Ww_1=[];
            pression=[];
@@ -2664,8 +2715,16 @@ end
  ind = find(abs(Ww_4parts) > 0.018);
  Ww_4parts(ind)=0;
  size_Ww_4parts=size(Ww_4parts);
+ 
+ %xlabel 
+ debut = 7.375465128009259e+05; 
+fin = 7.375496856018519e+05;
+
+A=linspace(debut,fin,7);
+B=datestr(A);
+ 
 figure('Name','Water vertical velocity ','NumberTitle','off','Units','normalized','Position',[0.66,0.5,0.33,0.42])
-    pcolor([1:1:size_Ww_4parts(2)],-pi,Ww_4parts);   % utilisation de la fonction pcolor + "shading interp"
+    pcolor([1:1:size_Ww_4parts(2)],-pi,Ww_4parts); % utilisation de la fonction pcolor + "shading interp"
     shading interp
     colormap(blue_red_cmap)
     H=colorbar;
@@ -2674,6 +2733,7 @@ figure('Name','Water vertical velocity ','NumberTitle','off','Units','normalized
     grid on
     ax = gca;
     ax.Layer='Top';
+    xticklabels({B})
     xlabel('Numéro de plongée')
     ylabel('- Pression (dbar)')
     title('Ww\_together')
