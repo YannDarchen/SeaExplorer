@@ -105,9 +105,9 @@ end
 
 %% SeaExplorer caracteristics 
  
-%explorer.M = 61.223; % Mass in kg bioswot 
-explorer.M = 61.7; % Mass in kg fumseck
-explorer.V0 = 0.0585; %Volume 
+explorer.M = 61.223; % Mass in kg bioswot 
+%explorer.M = 61.7; % Mass in kg fumseck
+explorer.V0 = 0.0594; %Volume 
 explorer.alpha = 4*10^-10; %compressibility %Pa^-1 
 explorer.beta =  1.09*10^-4; %coefficient d'expansion thermique  
 explorer.T0=20; % température 
