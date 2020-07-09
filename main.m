@@ -15,14 +15,14 @@ addpath('SeaWater');
 
 
 %data_name ='BioswotSeaExplorer_NavCTD_26Juin2020';
-data_name ='BioswotSeaExplorer_NavCTD_26Juin2020(2)';
+%data_name ='BioswotSeaExplorer_NavCTD_26Juin2020(2)';
 %data_name ='BioswotSeaExplorer_Nav&CTD.mat';
 %data_name ='Fumseck_SeaExplorer_Nav&CTD_PROVISOIRE.mat';
-%data_name='Fumseck_SeaExplorer_Nav&CTD_03Juillet2020.mat';
+data_name='Fumseck_SeaExplorer_Nav&CTD_03Juillet2020.mat';
 data=load(data_name);
-data.tableau=data.data; %% be careful to the variable of the load 
+%data.tableau=data.data; %% be careful to the variable of the load 
 %Select Year
-Year = [2018];
+Year = [2019];
 i_ign= data.tableau(:,2) ~= Year ;
 ign=i_ign(:,1);
 if length(Year)>1
@@ -76,11 +76,11 @@ Triplet=[];
 Triplet_diving=[];
 Triplet_climbing=[];
 
-%for fn=0:2:36
+for fn=0:2:36
   
-explorer.first_dive =100; %default is 1 
+explorer.first_dive =6+fn; %default is 1 
 %explorer.last_dive = data.tableau(end,1); %default is last 
-explorer.last_dive =111;
+explorer.last_dive =17+fn;
 explorer.first=explorer.first_dive; % in case you need to change this value 
 explorer.last=explorer.last_dive;
 
@@ -100,14 +100,14 @@ Temperature_Salinity_Profiles = no;
 vertical_velocities = yes; % always yes in order to calculate vertical velocities
 
 %%% les optimisations 
-opt_descente_1 = no;
-opt_descente_2 = no;
-opt_montee_1 = no;
-opt_montee_2 = no;
+opt_descente_1 = yes;
+opt_descente_2 = yes;
+opt_montee_1 = yes;
+opt_montee_2 = yes;
 opt_all = no;
 opt_bydive = no;
 opt_diving = no;
-opt_climbing=yes;
+opt_climbing=no;
 
 valeurs_opt=no;
 valeurs_moyennes=no;
@@ -119,9 +119,9 @@ Montee_2 =no;
 Together = no;
 All = no;
 Diving=no;
-Climbing=yes; 
+Climbing=no; 
 
-W_glider_W_Model = yes;  attack_angle_bydive = no; attack_angle_all = no;
+W_glider_W_Model = no;  attack_angle_bydive = no; attack_angle_all = no;
 Parameters_evolution = no; Parameters_evolution_bydive =no;
 water_velocity_descent_bydive = no; hist_desc = no;
 water_velocity_ascent_by_dive=no; 
@@ -606,7 +606,7 @@ tab_all.tab(:,8)=explorer_all.W_glider_acc*explorer_all.M;
 ign1 = abs(tab_all.tab(:,8)) > 0.01; %filtre sur l'accélération 
 tab_all.tab(ign1,:)=[];
 
-ign2=tab_all.tab(:,1) > 500 | tab_all.tab(:,1) < 100;
+ign2=tab_all.tab(:,1) > 570 | tab_all.tab(:,1) < 40;
 tab_all.tab(ign2,:)=[];
 
 
@@ -795,7 +795,7 @@ tab_descent_1.tab(:,8)=tab_descent_1.acc;
 ign = tab_descent_1.tab(:,4) > 0 | tab_descent_1.tab(:,3) > 0 ; %ignorer les montées donc pitch > 0
 tab_descent_1.tab(ign,:)=[];
 % 
-ign1 = abs(tab_descent_1.tab(:,8)) > 0.01;
+ign1 = abs(tab_descent_1.tab(:,8)) > 0.005;
 tab_descent_1.tab(ign1,:)=[];
 
 ign2=tab_descent_1.tab(:,1) > 500 | tab_descent_1.tab(:,1) < 100;
@@ -886,7 +886,7 @@ tab_descent_2.tab(:,8)=tab_descent_2.acc;
 ign = tab_descent_2.tab(:,4) > 0 | tab_descent_2.tab(:,3) > 0 ; %ignorer les montées donc pitch > 0
 tab_descent_2.tab(ign,:)=[];
 
-ign1 = abs(tab_descent_2.tab(:,8)) > 0.01; %ignorer les accélérations trop fortes 
+ign1 = abs(tab_descent_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_descent_2.tab(ign1,:)=[];
 
 ign2=tab_descent_2.tab(:,1) > 500 | tab_descent_2.tab(:,1) < 100;
@@ -972,10 +972,10 @@ tab_montee_1.tab(:,6)=tab_montee_1.temp;
 tab_montee_1.tab(:,7)=tab_montee_1.time;
 tab_montee_1.tab(:,8)=tab_montee_1.acc;
 
-ign = tab_montee_1.tab(:,4) < 0 | tab_montee_1.tab(:,3) < 0 ; %ignorer les descentes donc pitch > 0
-tab_montee_1.tab(ign,:)=[];
+ ign = tab_montee_1.tab(:,4) < 0 | tab_montee_1.tab(:,3) < 0 ; %ignorer les descentes donc pitch > 0
+ tab_montee_1.tab(ign,:)=[];
 
-ign1 = abs(tab_montee_1.tab(:,8)) > 0.01; %ignorer les accélérations trop fortes 
+ign1 = abs(tab_montee_1.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_montee_1.tab(ign1,:)=[];
 
 ign2=tab_montee_1.tab(:,1) > 500 | tab_montee_1.tab(:,1) < 100;
@@ -997,8 +997,8 @@ aw=3.7;
 Cd1w = 0.78;
 param0 = [explorer_all.V0,explorer_all.alpha,explorer_all.Cd];
 options = optimset('Display','iter','MaxFunEvals',8000,'MaxIter',8000);
-[x_mont_1,precision_montee_1] = fminsearch('cost',param0,options); 
-precision_montee_1=sqrt(precision_montee_1/length(pres));
+[x_mont_1] = fminsearch('cost',param0,options); 
+%precision_montee_1=sqrt(precision_montee_1/length(pres));
 %%%Deuxième optimisation
 global V0 eps Cd
 V0=x_mont_1(1);
@@ -1060,7 +1060,7 @@ tab_montee_2.tab(:,8)=tab_montee_2.acc;
 ign = tab_montee_2.tab(:,4) < 0 | tab_montee_2.tab(:,3) < 0 ; %ignorer les descentes donc pitch > 0
 tab_montee_2.tab(ign,:)=[];
 
-ign1 = abs(tab_montee_2.tab(:,8)) > 0.01; %ignorer les accélérations trop fortes 
+ign1 = abs(tab_montee_2.tab(:,8)) > 0.005; %ignorer les accélérations trop fortes 
 tab_montee_2.tab(ign1,:)=[];
 
 ign2=tab_montee_2.tab(:,1) > 500 | tab_montee_2.tab(:,1) < 100;
@@ -2632,7 +2632,7 @@ title('Ww\_m2')
     end
 end
 
-%end %fenetre glissante 
+end %fenetre glissante 
 %% %% ----- Together 
 
 if Together ==1
